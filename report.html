@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estimación · My Trips Flight Listing Optimization (Android)</title>
+<style>
+:root{
+  --bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;--muted:#9da7b3;
+  --accent:#58a6ff;--ok:#3fb950;--warn:#d29922;--crit:#f85149;--purple:#bc8cff;--nav:220px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+nav{position:fixed;top:0;left:0;bottom:0;width:var(--nav);background:var(--panel);border-right:1px solid var(--border);overflow-y:auto;padding:18px 0;z-index:10}
+nav .brand{padding:0 18px 14px;font-weight:700;color:var(--accent);font-size:14px;border-bottom:1px solid var(--border);margin-bottom:8px}
+nav .brand small{display:block;color:var(--muted);font-weight:400}
+nav a{display:block;padding:7px 18px;color:var(--muted);text-decoration:none;font-size:13.5px;border-left:3px solid transparent}
+nav a.sub{padding-left:32px;font-size:12.5px}
+nav a:hover{color:var(--text);background:var(--panel2)}
+nav a.active{color:var(--text);border-left-color:var(--accent);background:var(--panel2);font-weight:600}
+nav a.alert{color:#ffb4ae}
+main{margin-left:var(--nav);padding:28px 40px 80px;max-width:1500px}
+h1{font-size:26px;margin:0 0 6px}
+h2{font-size:22px;margin:48px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--border);color:#fff}
+h3{font-size:17px;margin:28px 0 10px;color:var(--accent)}
+h4{font-size:15px;margin:18px 0 8px;color:var(--purple)}
+p{margin:8px 0}
+a{color:var(--accent)}
+code{background:#0b0f14;border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:12.5px;color:#ffa657}
+.meta{color:var(--muted);font-size:13px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin:16px 0}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+.card h3{margin-top:0}
+.big{font-size:28px;font-weight:700;color:#fff}
+.big small{font-size:14px;color:var(--muted);font-weight:400}
+table{width:100%;border-collapse:collapse;margin:10px 0 18px;font-size:13.5px;background:var(--panel)}
+th,td{border:1px solid var(--border);padding:7px 9px;vertical-align:top;text-align:left}
+th{background:var(--panel2);color:#fff;position:sticky;top:0}
+tr:nth-child(even) td{background:#131922}
+td.n,th.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+tr.total td{font-weight:700;background:#1f2937}
+tr.cp td:first-child{border-left:4px solid var(--crit)}
+.tag{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11.5px;font-weight:600;margin:1px 2px;white-space:nowrap}
+.t1{background:#1f3a5f;color:#9cc9ff}.t2{background:#3b2a52;color:#d7b8ff}.t3{background:#21412b;color:#9be3ad}.t4{background:#4a3517;color:#ffd08a}.tx{background:#30363d;color:#c9d1d9}
+.sev-c{background:#5a1d1d;color:#ffb4ae}.sev-a{background:#4d3412;color:#ffd08a}.sev-m{background:#283548;color:#a5c8ff}
+.sup{background:#2d2a12;color:#f2e08a}
+.alertbox{border:2px solid var(--crit);background:linear-gradient(180deg,#2a1215,#1a0f12);border-radius:12px;padding:6px 20px 16px;margin:14px 0}
+.alertbox h2{border-bottom-color:#5a1d1d;color:#ffb4ae}
+.alertbox table{background:#1a1013}
+.note{border-left:4px solid var(--warn);background:#221c10;padding:10px 14px;border-radius:6px;margin:12px 0}
+.info{border-left:4px solid var(--accent);background:#0f1b2b;padding:10px 14px;border-radius:6px;margin:12px 0}
+.okbox{border-left:4px solid var(--ok);background:#0f2016;padding:10px 14px;border-radius:6px;margin:12px 0}
+ul{margin:6px 0 10px 20px;padding:0}
+li{margin:3px 0}
+.gantt{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin:10px 0 22px;overflow-x:auto}
+.gantt .row{display:flex;align-items:center;height:34px}
+.gantt .lbl{width:70px;flex:none;color:var(--muted);font-size:12.5px}
+.gantt .track{position:relative;flex:1;height:26px;background:#0b0f14;border-radius:4px;min-width:900px}
+.gantt .bar{position:absolute;top:2px;height:22px;border-radius:4px;font-size:11px;line-height:22px;color:#fff;text-align:center;overflow:hidden;white-space:nowrap;background:#1f6feb;border:1px solid #388bfd}
+.gantt .bar.c{background:#8e2420;border-color:var(--crit)}
+.gantt .bar.t{background:#3a3f47;border-color:#6e7681;color:#d0d7de}
+.gantt .axis{position:relative;height:18px;margin-left:70px;min-width:900px;font-size:11px;color:var(--muted)}
+.gantt .axis span{position:absolute;transform:translateX(-50%)}
+.gantt .title{font-weight:600;margin-bottom:6px}
+.legend span{display:inline-block;margin-right:14px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+.mermaid{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px;overflow-x:auto}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:1100px){.two{grid-template-columns:1fr}main{padding:20px}}
+</style>
+</head>
+<body>
+<nav id="nav">
+  <div class="brand">My Trips · Estimación<small>Android · Fase 1 y Fase 2</small></div>
+  <a href="#resumen">1. Resumen ejecutivo</a>
+  <a href="#alcance">2. Alcance por fase</a>
+  <a href="#gap">3. Gap analysis</a>
+  <a class="sub" href="#gap-t1">T1 Customer bookings</a>
+  <a class="sub" href="#gap-t2">T2 Save / Store</a>
+  <a class="sub" href="#gap-t3">T3 Sorting</a>
+  <a class="sub" href="#gap-t4">T4 Retrieve by criteria</a>
+  <a href="#tareas">4. Desglose de tareas</a>
+  <a class="sub" href="#tareas-f1">Fase 1</a>
+  <a class="sub" href="#tareas-f2">Fase 2</a>
+  <a class="sub" href="#trazabilidad">Trazabilidad AC → tarea</a>
+  <a href="#dependencias">5. Dependencias y ruta crítica</a>
+  <a href="#staffing">6. Escenarios de staffing</a>
+  <a class="alert" href="#aclaraciones">7. ⚠ Puntos a aclarar</a>
+  <a href="#supuestos">8. Supuestos y riesgos</a>
+  <a href="#rondas">9. Rondas de revisión</a>
+  <a href="#referencias">10. Referencias</a>
+</nav>
+
+<main>
+<h1>[Improvement] My Trips Flight Listing Optimization, Booking Retrieval, Sorting &amp; Persistence</h1>
+<p class="meta">Estimación Android · 1 día = <b>7.04 h efectivas</b> · PERT = (O + 4P + Pe) / 6 · Generado 2026-11-12 sobre la rama local del repo <code>volaris_android</code>.<br>
+Fuentes leídas: HU v8 (<a href="https://applaudostudios.atlassian.net/wiki/spaces/VE/pages/10485989477" target="_blank" rel="noopener">10485989477</a>), mapeo por fase v1 (<a href="https://applaudostudios.atlassian.net/wiki/spaces/~43663197/pages/10513547265" target="_blank" rel="noopener">10513547265</a>), T1 v6, T2 v8, T3 v1, T4 v3 y la página padre "[BR] V2 Mytrips List" v4. Todas se pudieron leer.</p>
+
+<!-- ============================ 1 ============================ -->
+<section id="resumen">
+<h2>1. Resumen ejecutivo</h2>
+
+<div class="cards">
+  <div class="card">
+    <h3>Fase 1 · T1 + T2 + T3</h3>
+    <p class="meta">Customer bookings, guardado/persistencia, merge, clasificación por ETA y orden.</p>
+    <p><b>Pregunta 1 · 1 developer</b></p>
+    <div class="big">198.67 h <small>= 28.22 días</small></div>
+    <p class="meta">Rango O–Pe: 138 h – 274 h (19.60 – 38.92 días)</p>
+    <p><b>Pregunta 2 · 2+ developers</b> (duración calendario, con overhead)</p>
+    <table>
+      <tr><th>Devs</th><th class="n">Horas</th><th class="n">Días</th></tr>
+      <tr><td>2</td><td class="n">111.96</td><td class="n">15.90</td></tr>
+      <tr><td><b>3 (máximo útil)</b></td><td class="n"><b>96.28</b></td><td class="n"><b>13.68</b></td></tr>
+      <tr><td>4</td><td class="n">101.68</td><td class="n">14.44 ↑ empeora</td></tr>
+    </table>
+    <p class="meta">Ruta crítica de desarrollo: 70.67 h (P1-01 → P1-13 → P1-14 → P1-15 → P1-16 → P1-17 → P1-18), empatada con la cadena de Room (P1-06 → P1-07).</p>
+  </div>
+  <div class="card">
+    <h3>Fase 2 · T4 + Pending Payment</h3>
+    <p class="meta">Retrieve Bookings By Criteria v2, paginación móvil, fallo parcial, AC 15.</p>
+    <p><b>Pregunta 1 · 1 developer</b></p>
+    <div class="big">171.67 h <small>= 24.38 días</small></div>
+    <p class="meta">Rango O–Pe: 116 h – 234 h (16.48 – 33.24 días)</p>
+    <p><b>Pregunta 2 · 2+ developers</b> (estrategia "interfaces primero + fakes")</p>
+    <table>
+      <tr><th>Devs</th><th class="n">Horas</th><th class="n">Días</th></tr>
+      <tr><td>2</td><td class="n">107.28</td><td class="n">15.24</td></tr>
+      <tr><td><b>3 (máximo útil)</b></td><td class="n"><b>93.96</b></td><td class="n"><b>13.35</b></td></tr>
+      <tr><td>4</td><td class="n">96.72</td><td class="n">13.74 ↑ empeora</td></tr>
+    </table>
+    <p class="meta">Sin desbloqueo con fakes la ruta crítica sube de 66.67 h a 78.67 h; 3 devs darían 105.56 h (14.99 d) y el máximo útil sería <b>2</b>.</p>
+  </div>
+  <div class="card">
+    <h3>Lectura rápida</h3>
+    <ul>
+      <li>Ambas fases juntas con 1 dev: <b>370.33 h = 52.60 días</b>.</li>
+      <li>Más de 3 devs no ayuda en ninguna fase: la ruta crítica pasa por <code>MyTripsHomeMiddleware.kt</code> (2,429 líneas), que solo puede tocar una persona a la vez, y por la cadena DTO → mapper → repositorio de T4.</li>
+      <li>Overhead de coordinación: <b>+8 % por cada developer adicional</b> (ver §6).</li>
+      <li><b>Exposición por aclaraciones</b>: si las preguntas se resuelven en contra, hasta <b>+124 h en Fase 1 (+62 %)</b> y <b>+70 h en Fase 2 (+41 %)</b>. Las críticas son C-01, C-02, C-03 y C-04 (Fase 1) y C-05 y C-06 (Fase 2). Ver <a href="#aclaraciones">§7</a>.</li>
+      <li>La tabla Q&amp;A de la HU está <b>vacía</b>: no hay respuestas DONE que prevalezcan sobre los AC.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="note"><b>Cómo leer los números.</b> "1 developer" es la suma PERT de todas las tareas (esfuerzo = duración). "N developers" es la <b>duración calendario</b>: makespan de un reparto real de tareas (§5), más code review repartido (12 h / N), más dos ciclos de soporte a QA repartibles entre 2 devs como máximo, todo multiplicado por (1 + 8 % × (N − 1)). El esfuerzo total en horas-dev crece con N (§6).</div>
+</section>
+
+<!-- ============================ 2 ============================ -->
+<section id="alcance">
+<h2>2. Alcance por fase (BR y AC → tema)</h2>
+<p>Fuente: <a href="https://applaudostudios.atlassian.net/wiki/spaces/~43663197/pages/10513547265" target="_blank" rel="noopener">Mapping of BR and AC for HU by Phase</a>. BR y AC de la <a href="https://applaudostudios.atlassian.net/wiki/spaces/VE/pages/10485989477" target="_blank" rel="noopener">HU</a>.</p>
+
+<h3>Fase 1 · 75 sub-AC</h3>
+<table>
+<tr><th>Tema</th><th>BR</th><th>AC (sub-AC)</th><th>Observaciones</th></tr>
+<tr><td><span class="tag t1">T1</span> Get Customer Bookings</td><td>BR 1 Get Customer Bookings</td><td>AC 1 (1.1–1.8) · AC 18.1</td><td>AC 18 aparece en <b>las dos fases</b> (18.1 en F1, 18.2 en F2).</td></tr>
+<tr><td><span class="tag t2">T2</span> Save / Store</td><td>BR 2 (Persistence Rules, Booking Updates and Removal) · BR 7 Logout and Booking Persistence</td><td>AC 2 (2.1–2.5) · AC 3 (3.1–3.6) · AC 16 (16.1–16.11) · AC 17 (17.1–17.8)</td><td>16.2, 16.4 y 11.6 dependen de Sorting. 17.5 y 17.6 tocan Save/Store y Sorting. 16.11 podría depender del endpoint de Fase 2: el mapeo pide confirmarlo (→ C-14).</td></tr>
+<tr><td><span class="tag t3">T3</span> Sorting (merge, clasificación, orden)</td><td>BR 3 Upcoming/Flown Classification · BR 4 Sorting (Time Zone and Feature Flag)</td><td>AC 4 (4.1–4.2) · AC 5 (5.1–5.4) · AC 6 (6.1–6.3) · AC 7 (7.1–7.3) · AC 8 (8.1–8.6) · AC 9 (9.1–9.5) · AC 10 (10.1) · AC 11 (11.1–11.7) · AC 12 (12.1–12.2) · AC 13 (13.1–13.3)</td><td>AC 13 exige un switch, pero la tabla de dependencias de la HU dice "Requires Feature Flags? NO" (→ C-13).</td></tr>
+</table>
+
+<h3>Fase 2 · 15 sub-AC</h3>
+<table>
+<tr><th>Tema</th><th>BR</th><th>AC (sub-AC)</th><th>Observaciones</th></tr>
+<tr><td><span class="tag t4">T4</span> Retrieve Upcoming / Flown Booking Details</td><td>BR 5 Retrieve Upcoming/Flown Booking Details · BR 6 Pending Payment</td><td>AC 14 (14.1–14.10) · AC 15 (15.1–15.4) · AC 18.2</td><td>BR 6 / AC 15 van aquí por <span class="tag sup">supuesto</span> del propio mapeo ("depende del objeto <code>payment</code> del nuevo response"). La HU fija para AC 15 "UAT 04 de enero, prod 14 de enero" (→ C-23).</td></tr>
+</table>
+
+<h3>Elementos sin mapeo o en conflicto</h3>
+<table>
+<tr><th>Elemento</th><th>Situación</th><th>Tratamiento</th></tr>
+<tr><td>BR "General" y "Scope"</td><td>No están en el mapeo.</td><td>Transversales: preservar navegación, disrupciones y autoservicio. Cubiertos por las tareas de regresión P1-18 y P2-14.</td></tr>
+<tr><td>AC 18</td><td>Repartido entre las dos fases.</td><td>18.1 → P1-04, P1-15 y P1-17. 18.2 → P2-12 y P2-13.</td></tr>
+<tr><td>"A pnr was bought inside the app" (<a href="https://applaudostudios.atlassian.net/wiki/spaces/VE/pages/10407280662" target="_blank" rel="noopener">página T2</a>)</td><td>Fuente de guardado que la HU no tiene (AC 2 solo nombra Search y Forgot Code).</td><td>Fuera de la estimación base. Pregunta abierta C-11 (+8 h).</td></tr>
+<tr><td>"Handle of old data" (página T2)</td><td>Regla de "renderizar solo hasta lo seguro" entre páginas. No está en ningún AC; la HU solo lo cita como Known Issue en BR 7.</td><td>Asignado a Fase 2 (P2-11), porque depende de la paginación de T4.</td></tr>
+<tr><td>"After the response from <code>mobile/retrievebookingsbycriteria</code>, edit the corresponding journey information" (página T2)</td><td>Regla de T2 que depende de T4.</td><td>Fase 2, tarea P2-06.</td></tr>
+<tr><td>Analytics</td><td>Tabla de dependencias: "NO". Tabla de analytics: "Trigger PENDING / EXISTING".</td><td>Pregunta abierta C-21.</td></tr>
+</table>
+</section>
+
+<!-- ============================ 3 ============================ -->
+<section id="gap">
+<h2>3. Gap analysis por tema: actual vs requerido</h2>
+<div class="info"><b>Punto de partida (código verificado).</b> El listado vive en <code>features/mytrips-home</code>, no en <code>features/mytrips</code>, que contiene Forgot Reservation Code y Retrieved Booking Details. Flujo actual: <code>getSavedBookings</code> (reservas <code>BookingEntity</code> con source CACHE) → <code>requestBookingByCostumerNumber</code> (endpoint viejo, caché en memoria <code>customerBookingsCache</code>) → <code>getBookingByCriteriaPaged</code>, que envía <b>hasta 90 PNR</b> (<code>MAX_PNRS_PER_REQUEST = 90</code>) al endpoint v1 con <b>paginación de servidor</b> (<code>currentPage</code>, <code>pageSize = 5</code>) → <code>TripSorter</code> reordena cada página por <code>departureDateTime</code> local.<br>
+Archivos: <a href="../../../features/mytrips-home/src/main/kotlin/com/volaris/mytripshome/middleware/MyTripsHomeMiddleware.kt">MyTripsHomeMiddleware.kt</a> (2,429 líneas) · <a href="../../../features/mytrips-home/src/main/kotlin/com/volaris/mytripshome/reducer/MyTripsHomeReducer.kt">MyTripsHomeReducer.kt</a> (455) · <a href="../../../features/mytrips-home/src/main/kotlin/com/volaris/mytripshome/utils/TripSorter.kt">TripSorter.kt</a> · <a href="../../../datasource/volarisapi/src/main/kotlin/com/volaris/datasource/volarisapi/api/mytrips/VolarisMyTripsApiClient.kt">VolarisMyTripsApiClient.kt</a></div>
+
+<!-- T1 -->
+<h3 id="gap-t1"><span class="tag t1">T1</span> Get customer bookings · Fase 1 · <a href="https://applaudostudios.atlassian.net/wiki/spaces/VE/pages/10409050113" target="_blank" rel="noopener">backend</a></h3>
+<h4>Endpoint</h4>
+<table>
+<tr><th>Aspecto</th><th>Actual (repo)</th><th>Requerido (Confluence)</th><th>Gap</th></tr>
+<tr><td>URL / método</td><td><code>GET booking/retrievebookingsbycustomernumber</code> (<code>VolarisMyTripsApiClient.retrieveBookingsByCustomerNumber</code>, línea 109)</td><td><code>GET api/booking/app/retrievebookingsbycustomernumber</code> · host <code>webapi(-uat).volaris.com/cs/</code></td><td>Ruta nueva (segmento <code>app/</code>). El base URL está ofuscado en <code>NativeKeys</code>, así que no se pudo confirmar qué cliente lo cubre (→ C-08).</td></tr>
+<tr><td>Auth</td><td>Token MMB: <code>AuthInterceptorMyTrips</code> → <code>AuthTokenSlot.MY_TRIPS_SESSION</code> (cliente <code>MY_TRIPS_CLIENT</code>)</td><td>"Logged in User Session Token"</td><td>Otro token. <span class="tag sup">S-02</span> Se asume <code>AuthTokenSlot.MAIN_SESSION</code> (<code>AuthInterceptor</code>). Hay que mover la llamada a otro cliente.</td></tr>
+<tr><td>Request</td><td>Query <code>customernumber</code> = <code>softCache.getUser()?.customerNumber</code> (<code>BookingRepositoryImpl</code>, línea 2041)</td><td>Query <code>customernumber</code></td><td>Sin cambio.</td></tr>
+<tr><td>Response</td><td><code>List&lt;BookingsByCustomerNumberDto&gt;</code>: bookingKey, allowedToModifyGdsBooking, <b>bookingStatus</b>, channelType, editable, <b>expiredDate</b>, flightDate, flightNumber, origin, passengerId, recordLocator, source*, systemCode, destination, name{first, middle, last, title, suffix}</td><td>Lista de <code>{ name.last, recordLocator, previousJourneyDepartureTime, nextJourneyDepartureTime }</code></td><td><b>Agregados</b>: previous/nextJourneyDepartureTime. <b>Eliminados</b>: bookingStatus, expiredDate, flightDate, flightNumber, origin, destination y 10 campos más. <b>Sin arrival, sin UTC, sin estatus de vuelo</b> (→ C-01, C-02, C-12).</td></tr>
+<tr><td>Paginación</td><td>No</td><td>No. Solo devuelve PNR de hasta 1 año.</td><td>Límite nuevo de 1 año (→ C-15).</td></tr>
+<tr><td>Errores</td><td>No documentados</td><td>No documentados</td><td>→ C-08. Regla del repo: no convertir fallos de transporte en <code>Error.noConnection()</code>.</td></tr>
+</table>
+<p><b>DTOs, mappers e interfaces que cambian:</b> DTO nuevo <code>CustomerBookingDto</code> (no se reutiliza <code>BookingsByCustomerNumberDto</code>); <code>VolarisApiMyTripsDataSource.retrieveBookingsByCustomerNumber</code> o un método nuevo en el datasource del cliente principal; <code>BookingRepositoryImpl.retrieveBookingsByCustomerNumber</code>; <code>RetrieveBookingsByCustomerNumberUseCase</code>; modelo de dominio <code>BookingsByCustomerNumber</code> → <code>CustomerBookingRef</code>.</p>
+<h4>Lógica</h4>
+<table>
+<tr><th>Actual</th><th>Requerido</th></tr>
+<tr><td><code>requestBookingByCostumerNumber</code> (MyTripsHomeMiddleware, línea ~1255): <code>distinctBy</code>, filtra <code>bookingStatus != HOLD_CANCELED</code>, arma <code>BookingBasicInformation(BACKEND, expiredDate)</code>, guarda en <code>customerBookingsCache</code> (en memoria; se limpia en <code>OnDisposeView</code>) y une con las reservas CACHE. Para Upcoming filtra por <code>expiredDate</code> (líneas 2004–2013). En fallo muestra alerta de reintento y no borra nada.</td><td>Solo con sesión autenticada (1.2). Separar <code>previous</code> → entrada Flown y <code>next</code> → entrada Upcoming. Aplicar la regla de ETA aunque haya pasado la salida (BR 1 "Important", 1.7). Usar horarios con disrupción (1.8, que da el backend). No borrar reservas guardadas si falla (18.1). Persistir referencias para después del logout (17.1).</td></tr>
+</table>
+<p><b>Otros consumidores afectados:</b> <a href="../../../features/home/src/main/kotlin/com/volaris/home/middleware/HomeMiddleware.kt">HomeMiddleware.addBookingCrashlyticsKeys</a> (línea ~1348) usa <code>bookingStatus</code>, que desaparece en el contrato nuevo.</p>
+<p><b>Riesgos:</b> regresión en Home (llaves de Crashlytics) · reservas HOLD_CANCELED que reaparecen si el backend no las filtra · el token equivocado da 401 y el refresh se dispara en un interceptor que no corresponde.</p>
+
+<!-- T2 -->
+<h3 id="gap-t2"><span class="tag t2">T2</span> Save / Store other bookings · Fase 1 · <a href="https://applaudostudios.atlassian.net/wiki/spaces/VE/pages/10407280662" target="_blank" rel="noopener">backend</a></h3>
+<h4>Endpoint</h4>
+<p>No hay endpoint nuevo: el almacenamiento es local. En Fase 1 los horarios salen de la respuesta actual de <code>GET booking/getbookingbyrecordlocatorandlastname</code> (<code>BookingResponseDto</code> → <code>Booking</code>, que ya trae journeys y segmentos con UTC) <span class="tag sup">S-05</span>. En Fase 2 se actualizan con la respuesta de T4 (P2-06).</p>
+<h4>Lógica y persistencia</h4>
+<table>
+<tr><th>Aspecto</th><th>Actual (repo)</th><th>Requerido</th><th>Gap</th></tr>
+<tr><td>Qué se guarda</td><td>La reserva completa en <a href="../../../datasource/datapersistence/src/main/kotlin/com/volaris/persistence/room/entity/booking/BookingEntity.kt">BookingEntity</a> (recordLocator PK, passengers/journeys/bookingInfo/breakdown en JSON, <code>source</code>) vía <code>fetchAsset</code> (<code>BookingRepositoryImpl</code>, línea ~847). Las tarjetas v1 se cachean en <a href="../../../datasource/datapersistence/src/main/kotlin/com/volaris/persistence/room/entity/mytrips/BookingPagedEntity.kt">BookingPagedEntity</a>.</td><td><code>{recordLocator, name.last, journeys[{departureTime, arrivalTime, departureTimeUTC, arrivalTimeUTC}]}</code> por PNR, con journeys independientes (3.4–3.6).</td><td>Entidad nueva, ligera y con owner <span class="tag sup">S-03/S-04</span>. <code>VolarisDataBase</code> v22 → v23 con AutoMigration.</td></tr>
+<tr><td>Cuándo se guarda</td><td>My Trips Search (<code>onAddTripClick</code>, línea ~928) y Forgot Code (<a href="../../../features/mytrips/src/main/kotlin/com/volaris/forgotreservationcode/middleware/ForgotReservationCodeMiddleware.kt">ForgotReservationCodeMiddleware</a>, líneas 475 y 545) guardan con source CACHE. Las reservas del cliente no se persisten como referencia.</td><td>Search y Forgot Code (2.1, 2.2), reserva de otro cliente (2.3), nada si falla (2.4), upsert (2.5). Persistir también las del cliente (17.1).</td><td>Agregar el guardado de referencias en los dos puntos y persistir las del cliente.</td></tr>
+<tr><td>Logout</td><td><a href="../../../data/authentication/src/main/kotlin/com/volaris/data/authentication/repository/AuthenticationRepositoryImpl.kt">AuthenticationRepositoryImpl</a> (líneas 496–497) borra las reservas BACKEND y <b>todo</b> <code>BookingPagedEntity</code>. También borran BACKEND <code>MainMiddleware</code> (línea 218), <code>SettingsMiddleware</code> (línea 298) y <code>AppConfigRepositoryImpl</code> (línea 190, arranque sin credenciales).</td><td>Preservar las dos fuentes (17.1–17.3) y proteger los datos de otra cuenta (17.7, 17.8).</td><td>4 puntos de borrado que cambiar. Conflicto de seguridad por resolver (→ C-04).</td></tr>
+<tr><td>Actualizar o eliminar tras operaciones</td><td>No existe. Solo <code>OnReturnFromPersonalize</code> invalida la caché y recarga (MyTripsHomeMiddleware, línea ~649).</td><td>Move y Change: actualizar. OFOP, Full Voucher, Online Refund Plus y Cancel otras tarifas: eliminar. Nada si la operación falla (16.9, 16.10).</td><td>Hooks en <code>moveflightdisruptions</code> (<code>MoveFlightItineraryMiddleware</code>, 1,031 líneas; Move y Change), <code>refundofop</code> (746), <code>fullrefundvoucher</code> y <code>onlinerefund</code> (384). No se encontró un flujo nativo separado para "Cancel Flight – Other Fares" (→ C-10).</td></tr>
+</table>
+<p><b>Riesgos:</b> Home Preflight lee <code>BookingEntity</code> (CACHE y BACKEND) y <code>BookingPagedEntity</code> para el vuelo más cercano. Si se preservan reservas tras el logout sin owner, Home podría mostrar la reserva de otra cuenta, lo que sería una regresión de privacidad · migración Room y <code>verifyRoomSchemaLocks</code> en CI · <code>BookingCache</code> está acotado a <code>AppFlow.BOOKING</code> y <b>no</b> debe usarse como almacenamiento de My Trips.</p>
+
+<!-- T3 -->
+<h3 id="gap-t3"><span class="tag t3">T3</span> Sorting of PNRs · Fase 1 · <a href="https://applaudostudios.atlassian.net/wiki/spaces/VE/pages/10409345060" target="_blank" rel="noopener">backend</a></h3>
+<table>
+<tr><th>Aspecto</th><th>Actual (repo)</th><th>Requerido</th><th>Gap</th></tr>
+<tr><td>Clasificación Upcoming/Flown</td><td>La hace el backend con el flag <code>upcoming</code> del request v1. La app solo prefiltra Upcoming por <code>expiredDate</code> (el de T1 o el arrivalTimeUTC del último segmento).</td><td>En la app, por journey: <code>ETA UTC &gt; now UTC</code> → Upcoming, <code>&lt;=</code> → Flown. El PNR puede quedar en ambas secciones, los cancelados no pasan a Flown y se usa la ETA actualizada.</td><td>Clasificador de dominio nuevo, con <code>Clock</code> inyectable. Las entradas de T1 no traen ETA (→ C-01).</td></tr>
+<tr><td>Merge / dedupe</td><td>CACHE + BACKEND sin duplicados por <code>recordLocator</code> (global).</td><td>Dedupe <b>por sección</b> (4.2): el mismo PNR puede estar en Upcoming y en Flown.</td><td>Regla nueva.</td></tr>
+<tr><td>Orden</td><td><code>TripSorter</code>: por <code>flightDetailList.first().departureDateTime</code> (local), asc/desc, en cada <code>MergeTrips</code>/<code>AddTrip</code> del reducer (líneas 314, 345, 372) y en el middleware (línea 1690).</td><td>Upcoming asc por el journey próximo o en curso. Flown desc por el journey completado más reciente. Switch OFF = <code>departureTime</code>, ON = <code>departureTimeUTC</code>.</td><td>Reemplazar <code>TripSorter</code> para que el reducer preserve el orden calculado. Las entradas T1 no tienen UTC (→ C-02).</td></tr>
+<tr><td>Feature flag</td><td>No existe. En <code>Keys.kt</code> solo está <code>myTripsCacheDurationSeconds</code> y no hay alias de sort en <code>RemoteFlagAlias</code>.</td><td>Switch local/UTC (13.1–13.3).</td><td>Flag nuevo en Remote Config <span class="tag sup">S-06</span> (→ C-13).</td></tr>
+<tr><td>Recalcular</td><td>TTL <code>MyTripsCacheState</code> + <code>customerBookingsCache</code>.</td><td>Al refrescar o recalcular (7.3), al volver de una operación (11.6) y tras restaurar (17.6). La página T1 pide volver a llamar al cambiar de tab si el próximo vuelo ya llegó.</td><td>→ C-16.</td></tr>
+</table>
+<div class="note"><b>Evidencia del conflicto C-02:</b> la propia <a href="https://applaudostudios.atlassian.net/wiki/spaces/VE/pages/10409345060" target="_blank" rel="noopener">página Sorting</a> ordena en una misma tabla valores locales sin offset de T1 (<code>2026-10-12T02:45:00</code>) y valores UTC con <code>Z</code> de T2 (<code>2026-10-14T17:06:14Z</code>). El dominio de estaciones del repo no expone zona horaria, así que la app no puede convertir T1 a UTC con lo que tiene hoy.</div>
+<p><b>Riesgos:</b> las pruebas dependen de la zona del dispositivo (inyectar <code>Clock</code>) · el filtro <code>upcoming</code> del endpoint v1 que se usará en Fase 1 puede contradecir la regla de ETA y dejar sin tarjeta un vuelo en curso (→ C-03) · reordenar en el reducer rompe la deduplicación por generación (<code>tripRemovals</code>) si no se respeta.</p>
+
+<!-- T4 -->
+<h3 id="gap-t4"><span class="tag t4">T4</span> Retrieve Bookings By Criteria v2 · Fase 2 · <a href="https://applaudostudios.atlassian.net/wiki/spaces/VE/pages/10408984601" target="_blank" rel="noopener">backend</a></h3>
+<h4>Endpoint</h4>
+<table>
+<tr><th>Aspecto</th><th>Actual (v1)</th><th>Requerido (v2)</th><th>Gap</th></tr>
+<tr><td>URL / método</td><td><code>POST v1/booking/mobile/retrievebookingsbycriteria</code> (VolarisMyTripsApiClient, línea 104)</td><td><code>POST api/v2/booking/mobile/retrievebookingsbycriteria</code></td><td>Versión y path nuevos.</td></tr>
+<tr><td>Auth</td><td>MMB (<code>MY_TRIPS_CLIENT</code>)</td><td>MMB Session Token</td><td>Sin cambio.</td></tr>
+<tr><td>Request</td><td><code>BookingsByCriteriaPagedRequestDto{pnrs[code, lastName], currentPage, pageSize, upcoming}</code>, hasta 90 PNR</td><td><code>{pnrs[≤5]{code, lastName}, upcoming, expiredAfterSTA}</code></td><td><b>Eliminados</b>: currentPage, pageSize. <b>Agregado</b>: <code>expiredAfterSTA</code>, que aparece en el ejemplo pero no en la tabla de campos (→ C-17). Máximo de 5 PNR.</td></tr>
+<tr><td>Paginación</td><td>De servidor: <code>pagination{currentPage, pageSize, totalPages, totalResults}</code></td><td>Ninguna. La paginación la hace la app.</td><td>Lógica de lotes en el middleware.</td></tr>
+<tr><td>Response raíz</td><td><code>BookingPagedDto</code>: pnr, currencyCode, status, paidStatus, priceStatus, balanceDue, createdDate, payment{status}, flightDetails[], passengers[], paymentStatus, tuaStatus{obj}, errorReason</td><td>pnr, createdDate, currencyCode, primaryPassenger.lastName, payment{state, hasPositiveBalance, hasHoldCharge, action, holdExpiration}, tuaStatus(int), passengerSummary{total, minorOrSenior}, journeys[]</td><td><b>Eliminados</b>: status, paidStatus, priceStatus, balanceDue, passengers[], paymentStatus, <b>errorReason</b>. <b>Agregados</b>: payment.state/action/holdExpiration, passengerSummary. <b>Cambio de tipo</b>: tuaStatus pasa de objeto a int; el ejemplo trae <code>3</code>, pero el enum solo define 0–2 (→ C-18).</td></tr>
+<tr><td>Vuelos</td><td><code>flightDetails[]</code> plano: flightType(str), iataOrigin/Destination, flightNumber, carrierCode, journeyKey, isInternational, departure/arrivalDateTime(+Utc), numberOfStops, flightStatus(str), disruptionCode, scheduleChange{…}</td><td><code>journeys[]{journeyKey, flightType(1–4), stops, international, frontier, designator{origin, destination, departure, arrival, departureUtc, arrivalUtc, segments[{carrierCode, number, codeshareCarrier, flightStatus(1–8), designator}]}, queue[{type 0–5, code, oldFlightNumber, original/new Departure/Arrival}], passengerSegment{fareType, liftStatus, checkedInOrBoardedCount, notCheckedInCount, availableBoardingPassesAllBoarded}}</code></td><td><b>Renombrados</b>: departureDateTimeUtc → designator.departureUtc, isInternational → international, numberOfStops → stops. scheduleChange y disruptionCode → <code>queue</code>. Datos por pasajero → <code>passengerSegment</code>, que es agregado. <b>Nuevos</b>: frontier y codeshareCarrier desde el backend.</td></tr>
+<tr><td>Errores</td><td><code>errorReason = INVALID_LastName</code> alimenta <code>lastNameMismatchPnrs</code> → <code>BookingRecoveryManagerImpl</code></td><td>No documentados (ni códigos HTTP ni errores por PNR)</td><td>→ C-06. Afecta 18.2 y la recuperación de apellido.</td></tr>
+</table>
+<p><b>DTOs, mappers e interfaces que cambian:</b> request/response DTO v2 nuevos y método Retrofit nuevo (solo DTOs, ver ArchUnit) · <a href="../../../datasource/volarisapi/src/main/kotlin/com/volaris/datasource/volarisapi/VolarisApiMyTripsDataSourceImpl.kt">VolarisApiMyTripsDataSourceImpl</a> (685 líneas) · dominio <a href="../../../domain/booking/src/main/kotlin/com/volaris/domain/model/BookingByCriteriaPaged.kt">BookingByCriteriaPaged.kt</a> (<code>BookingPaged</code>, <code>isPendingPaymentBooking()</code>, <code>HOLD_KEYS</code>) · <a href="../../../data/mytrips/src/main/kotlin/com/volaris/data/mytrips/repository/MyTripsRepositoryImpl.kt">MyTripsRepositoryImpl</a> (554) · <a href="../../../data/mytrips/src/main/kotlin/com/volaris/data/mytrips/repository/BookingRecoveryRepositoryImpl.kt">BookingRecoveryRepositoryImpl</a> · mappers de UI <a href="../../../features/mytrips-home/src/main/kotlin/com/volaris/mytripshome/mappers/BookingCardPagedHelper.kt">BookingCardPagedHelper.kt</a> (702) y <a href="../../../features/mytrips-home/src/main/kotlin/com/volaris/mytripshome/mappers/TripCardParametersMapper.kt">TripCardParametersMapper.kt</a> (547).</p>
+<h4>Lógica</h4>
+<table>
+<tr><th>Aspecto</th><th>Actual</th><th>Requerido</th></tr>
+<tr><td>Pending payment</td><td><code>isPendingPaymentBooking()</code> = UNDER_PAID o balanceDue &gt; 0. Mensaje de expiración: <b>createdDate + 24 h si hay cargo HOLD o 3RPT, si no + 2 h</b> (<code>determineReservationMessage</code>, TripCardParametersMapper línea ~358).</td><td>Estado y acción de <code>payment</code>. Expiración: <b>3RPT = createdDate + 2 h</b>; HOLD y demás = <code>holdExpiration</code> de Navitaire. <code>hasHoldCharge</code> vale true para HOLD <i>y</i> 3RPT, así que no se pueden distinguir (→ C-05).</td></tr>
+<tr><td>Paginación</td><td>Paginación de servidor y <code>OnLoadNextPage</code> con <code>currentPage + 1</code>. En fallo, alerta de reintento.</td><td>Lotes de ≤5 en el orden de T3 (14.6–14.9), conservar el orden aunque el backend responda distinto (14.10) y conservar los lotes exitosos si falla uno (18.2).</td></tr>
+<tr><td>Offline / Home</td><td><code>MyTripsRepositoryImpl</code> persiste las tarjetas en <code>BookingPagedEntity</code>. Home Preflight y Main las leen (<code>GetAllPagedBookingsSavedUseCase</code>, <code>mapToBookingsForNearestFlight</code>).</td><td>No lo menciona Confluence. Hay que conservar el comportamiento (BR General).</td></tr>
+</table>
+<p><b>Riesgos:</b> paridad funcional de las tarjetas (check-in, pase de abordar, servicios adicionales, codeshare, Frontier y DOD dependen de campos que v2 cambia o elimina, → C-07) · recuperación de apellido (FR-009 / FR-019) · Home Preflight · analytics <code>analyticsForMyTrips</code> (usa la lista de PNR de la página y <code>getPendingPaymentPnrsPaged</code>) · <b>ArchUnit</b>: <code>NetworkBoundaryTest</code> es <code>FreezingArchRule</code>. El método legado <code>VolarisApiClient.retrieveBookingsByCriteria(BookingsByCriteriaRequest)</code> está en el baseline (archunit_store, línea 13) porque recibe un modelo de dominio. <b>No copiarlo.</b> El método v2 debe recibir y devolver DTOs, igual que el v1 paginado actual.</p>
+</section>
+
+<!-- ============================ 4 ============================ -->
+<section id="tareas">
+<h2>4. Desglose de tareas por fase</h2>
+<p class="meta">O = optimista, P = probable, Pe = pesimista, en horas. Cada tarea incluye sus unit tests. Las filas con borde rojo están en la ruta crítica. "Paralelo" indica si la tarea puede correr a la vez que otras una vez cumplidas sus dependencias.</p>
+
+<h3 id="tareas-f1">Fase 1</h3>
+<table>
+<tr><th>ID</th><th>Tema</th><th>Descripción</th><th>Capa / módulo</th><th class="n">O</th><th class="n">P</th><th class="n">Pe</th><th class="n">PERT</th><th>Dep.</th><th>Paralelo</th></tr>
+<tr class="cp"><td>P1-01</td><td><span class="tag tx">X</span></td><td>Kick-off técnico: contratos de dominio (<code>CustomerBookingRef</code>, <code>SavedBooking</code>, <code>JourneyTimes</code>, <code>ClassifiedEntry</code>), interfaces de repositorio y use cases, fakes en memoria y decisión de DB.</td><td>domain/mytrips</td><td class="n">4</td><td class="n">6</td><td class="n">8</td><td class="n">6.00</td><td>—</td><td>No (bloqueante)</td></tr>
+<tr><td>P1-02</td><td><span class="tag t3">T3</span></td><td>Flag de Remote Config para ordenar por local o UTC: alias, key, defaults debug/UAT/release, use case y test.</td><td>datasource/remoteconfig · datasource/common · domain/config</td><td class="n">4</td><td class="n">5</td><td class="n">8</td><td class="n">5.33</td><td>—</td><td>Sí</td></tr>
+<tr><td>P1-03</td><td><span class="tag t1">T1</span></td><td><code>CustomerBookingDto</code> + Retrofit <code>GET api/booking/app/retrievebookingsbycustomernumber</code> en el cliente con token de sesión logueada, datasource, mapper, DI y tests (cliente y datasource).</td><td>datasource/volarisapi · datasource/common</td><td class="n">6</td><td class="n">8</td><td class="n">12</td><td class="n">8.33</td><td>P1-01</td><td>Sí</td></tr>
+<tr><td>P1-04</td><td><span class="tag t1">T1</span></td><td>Repositorio + <code>GetCustomerBookingsUseCase</code>: guard de sesión autenticada, customerNumber del usuario, previous → Flown y next → Upcoming, fallo sin borrar lo guardado. Tests de repo y use case.</td><td>data/booking · domain/mytrips</td><td class="n">6</td><td class="n">8</td><td class="n">12</td><td class="n">8.33</td><td>P1-03</td><td>Sí</td></tr>
+<tr><td>P1-05</td><td><span class="tag t1">T1</span></td><td>Migrar consumidores del endpoint viejo: llaves Crashlytics de <code>HomeMiddleware</code> (bookingStatus), filtros HOLD_CANCELED y expiredDate. Retirar o aislar el método viejo según C-09. Tests.</td><td>features/home · features/mytrips-home</td><td class="n">4</td><td class="n">6</td><td class="n">10</td><td class="n">6.33</td><td>P1-04</td><td>Sí</td></tr>
+<tr class="cp"><td>P1-06</td><td><span class="tag t2">T2</span></td><td>Room: <code>SavedBookingEntity</code> (recordLocator PK, lastName, source, ownerCustomerNumber, journeysJson local+UTC, updatedAt), DAO, TypeConverter Gson, <code>VolarisDataBase</code> v22 → v23 AutoMigration, schema JSON y tests de entidad, converter y migración.</td><td>datasource/datapersistence</td><td class="n">8</td><td class="n">12</td><td class="n">16</td><td class="n">12.00</td><td>P1-01</td><td>Sí</td></tr>
+<tr class="cp"><td>P1-07</td><td><span class="tag t2">T2</span></td><td>Datasource local + repositorio + use cases (Upsert, UpdateJourneys, Remove, GetAll por owner) y tests.</td><td>datasource/common · data/mytrips · domain/mytrips</td><td class="n">8</td><td class="n">10</td><td class="n">14</td><td class="n">10.33</td><td>P1-06</td><td>Sí</td></tr>
+<tr><td>P1-08</td><td><span class="tag t2">T2</span></td><td>Guardar tras recuperación exitosa en My Trips Search (<code>onAddTripClick</code>) y Forgot Code (<code>ForgotReservationCodeMiddleware</code>). Mapear <code>Booking</code> → journeys local/UTC. Nada si falla. Tests de middleware.</td><td>features/mytrips-home · features/mytrips</td><td class="n">6</td><td class="n">8</td><td class="n">12</td><td class="n">8.33</td><td>P1-07</td><td>Sí (toca el hotspot)</td></tr>
+<tr><td>P1-09</td><td><span class="tag t2">T2</span></td><td>Persistir las referencias de reservas del cliente (fuente CUSTOMER + owner) tras un T1 exitoso. Tests.</td><td>data/mytrips</td><td class="n">4</td><td class="n">6</td><td class="n">8</td><td class="n">6.00</td><td>P1-07, P1-04</td><td>Sí</td></tr>
+<tr><td>P1-10</td><td><span class="tag t2">T2</span></td><td>Logout y cambio de cuenta: dejar de borrar referencias en <code>AuthenticationRepositoryImpl</code>, <code>MainMiddleware</code>, <code>SettingsMiddleware</code> y <code>AppConfigRepositoryImpl</code>. Filtro por owner y acceso protegido (C-04). Validar Home Preflight. Tests.</td><td>data/authentication · features/main · features/settings · data/appconfig</td><td class="n">8</td><td class="n">12</td><td class="n">16</td><td class="n">12.00</td><td>P1-07</td><td>Sí</td></tr>
+<tr><td>P1-11</td><td><span class="tag t2">T2</span></td><td>Hooks de Move Flight y Change Flight: actualizar journeys solo tras la confirmación, conservar el itinerario si falla, avisar a My Trips para que recalcule. Tests.</td><td>features/moveflightdisruptions</td><td class="n">8</td><td class="n">10</td><td class="n">14</td><td class="n">10.33</td><td>P1-07</td><td>Sí</td></tr>
+<tr><td>P1-12</td><td><span class="tag t2">T2</span></td><td>Hooks de eliminación: OFOP (<code>refundofop</code>), Full Voucher (<code>fullrefundvoucher</code>), Online Refund Plus (<code>onlinerefund</code>) y Cancel otras tarifas (C-10). No eliminar si falla. Tests.</td><td>features/refundofop · fullrefundvoucher · onlinerefund</td><td class="n">8</td><td class="n">12</td><td class="n">16</td><td class="n">12.00</td><td>P1-07</td><td>Sí</td></tr>
+<tr class="cp"><td>P1-13</td><td><span class="tag t3">T3</span></td><td>Clasificador de dominio puro: ETA UTC contra <code>Clock</code> UTC, una entrada por journey (PNR en ambas secciones), cancelados fuera de Flown, medianoche y zonas horarias. Tests con todos los escenarios de la HU.</td><td>domain/mytrips</td><td class="n">8</td><td class="n">12</td><td class="n">16</td><td class="n">12.00</td><td>P1-01</td><td>Sí</td></tr>
+<tr class="cp"><td>P1-14</td><td><span class="tag t3">T3</span></td><td>Composer: merge, dedupe por sección y orden (Upcoming asc / Flown desc) con referencia por sección y flag local/UTC. Tests.</td><td>domain/mytrips</td><td class="n">8</td><td class="n">10</td><td class="n">14</td><td class="n">10.33</td><td>P1-13, P1-02</td><td>Sí</td></tr>
+<tr class="cp"><td>P1-15</td><td><span class="tag t3">T3</span></td><td>MVI: reescribir la carga en <code>MyTripsHomeMiddleware</code> (<code>getSavedBookings</code> / <code>requestBookingByCostumerNumber</code>) sobre las fuentes nuevas y el composer. Reemplazar <code>customerBookingsCache</code> y el filtro <code>expiredDate</code>. Recalcular en refresh, cambio de tab y retorno de Personalize.</td><td>features/mytrips-home</td><td class="n">8</td><td class="n">12</td><td class="n">16</td><td class="n">12.00</td><td>P1-14, P1-04, P1-07</td><td>No (hotspot)</td></tr>
+<tr class="cp"><td>P1-16</td><td><span class="tag t3">T3</span></td><td>MVI: pedir detalle en lotes de ≤5 en el orden calculado contra v1 (S-01). Que el reducer conserve el orden (fuera <code>TripSorter</code>) e inserte la reserva recién guardada en su posición.</td><td>features/mytrips-home</td><td class="n">8</td><td class="n">12</td><td class="n">16</td><td class="n">12.00</td><td>P1-15</td><td>No (hotspot)</td></tr>
+<tr class="cp"><td>P1-17</td><td><span class="tag tx">X</span></td><td>Tests de integración del store MVI (base + subclases): merge, dedupe, flag ON/OFF, ETA, logout y restauración, fallo de T1.</td><td>features/mytrips-home (test)</td><td class="n">8</td><td class="n">12</td><td class="n">16</td><td class="n">12.00</td><td>P1-16, P1-08, P1-09, P1-10</td><td>Parcial</td></tr>
+<tr class="cp"><td>P1-18</td><td><span class="tag tx">X</span></td><td>Regresión de Home y Main (Preflight), ArchUnit (<code>NetworkBoundaryTest</code>, <code>MviRulesTest</code>), detekt, ktlint y <code>verifyRoomSchemaLocks</code>.</td><td>varios</td><td class="n">4</td><td class="n">6</td><td class="n">10</td><td class="n">6.33</td><td>P1-05, P1-10, P1-11, P1-12, P1-17</td><td>No</td></tr>
+<tr><td>P1-19</td><td><span class="tag tx">X</span></td><td>Code review de los PR por capa y ajustes.</td><td>—</td><td class="n">8</td><td class="n">12</td><td class="n">16</td><td class="n">12.00</td><td>distribuido</td><td>Sí</td></tr>
+<tr><td>P1-20</td><td><span class="tag tx">X</span></td><td>Soporte a QA, ciclo 1, y corrección de bugs.</td><td>—</td><td class="n">6</td><td class="n">8</td><td class="n">12</td><td class="n">8.33</td><td>P1-18</td><td>Máx. 2 devs</td></tr>
+<tr><td>P1-21</td><td><span class="tag tx">X</span></td><td>Soporte a QA, ciclo 2 (regresión), y corrección de bugs.</td><td>—</td><td class="n">6</td><td class="n">8</td><td class="n">12</td><td class="n">8.33</td><td>P1-20</td><td>Máx. 2 devs</td></tr>
+<tr class="total"><td colspan="4">Total Fase 1</td><td class="n">138</td><td class="n">195</td><td class="n">274</td><td class="n">198.67</td><td colspan="2">= 28.22 días</td></tr>
+</table>
+<table>
+<tr><th>Subtotal Fase 1 por tema</th><th class="n">PERT (h)</th><th class="n">Días</th></tr>
+<tr><td><span class="tag t1">T1</span> P1-03, P1-04, P1-05</td><td class="n">23.00</td><td class="n">3.27</td></tr>
+<tr><td><span class="tag t2">T2</span> P1-06 a P1-12</td><td class="n">71.00</td><td class="n">10.09</td></tr>
+<tr><td><span class="tag t3">T3</span> P1-02, P1-13 a P1-16</td><td class="n">51.67</td><td class="n">7.34</td></tr>
+<tr><td><span class="tag tx">X</span> P1-01, P1-17 a P1-21</td><td class="n">53.00</td><td class="n">7.53</td></tr>
+</table>
+
+<h3 id="tareas-f2">Fase 2</h3>
+<table>
+<tr><th>ID</th><th>Tema</th><th>Descripción</th><th>Capa / módulo</th><th class="n">O</th><th class="n">P</th><th class="n">Pe</th><th class="n">PERT</th><th>Dep.</th><th>Paralelo</th></tr>
+<tr class="cp"><td>P2-01</td><td><span class="tag tx">X</span></td><td>Contratos de dominio v2 (<code>BookingDetail</code>, <code>Journey</code>, <code>Segment</code>, <code>Queue</code>, <code>PassengerSegment</code>, <code>PaymentInfo</code>), interfaz de repositorio y use case, fakes y fixtures con el JSON de Confluence. Decidir si se reemplaza <code>BookingPaged</code>.</td><td>domain/booking · domain/mytrips</td><td class="n">4</td><td class="n">6</td><td class="n">8</td><td class="n">6.00</td><td>Fase 1</td><td>No (bloqueante)</td></tr>
+<tr class="cp"><td>P2-02</td><td><span class="tag t4">T4</span></td><td>DTOs request/response v2 + Retrofit <code>POST api/v2/booking/mobile/retrievebookingsbycriteria</code> en <code>MY_TRIPS_CLIENT</code>, enums (payment.state/action, tuaStatus, flightType 1–4, codeshareCarrier, flightStatus 1–8, queue.type 0–5, fareType, liftStatus) y tests de cliente y datasource.</td><td>datasource/volarisapi</td><td class="n">8</td><td class="n">12</td><td class="n">16</td><td class="n">12.00</td><td>P2-01</td><td>Sí</td></tr>
+<tr class="cp"><td>P2-03</td><td><span class="tag t4">T4</span></td><td>Mappers DTO → dominio y sus tests.</td><td>datasource/volarisapi</td><td class="n">6</td><td class="n">8</td><td class="n">12</td><td class="n">8.33</td><td>P2-02</td><td>Sí</td></tr>
+<tr class="cp"><td>P2-04</td><td><span class="tag t4">T4</span></td><td>Repositorio + use case: lotes de ≤5, <code>upcoming</code> por sección, resultado por lote (éxito o fallo). Tests.</td><td>data/mytrips · domain/mytrips</td><td class="n">6</td><td class="n">10</td><td class="n">14</td><td class="n">10.00</td><td>P2-03</td><td>Sí</td></tr>
+<tr class="cp"><td>P2-05</td><td><span class="tag t4">T4</span></td><td>Persistencia offline del detalle v2 para Home Preflight y Main (<code>GetAllPagedBookingsSavedUseCase</code>, <code>mapToBookingsForNearestFlight</code>): entidad nueva o cambio de <code>BookingPagedEntity</code>, migración v23 → v24 y tests.</td><td>datasource/datapersistence · data/mytrips · features/home</td><td class="n">8</td><td class="n">12</td><td class="n">16</td><td class="n">12.00</td><td>P2-04</td><td>Sí</td></tr>
+<tr><td>P2-06</td><td><span class="tag t2">T2</span>/<span class="tag t4">T4</span></td><td>Actualizar los journeys guardados con la respuesta v2 (regla de la página T2), reconciliar tras una modificación y reclasificar.</td><td>data/mytrips</td><td class="n">4</td><td class="n">6</td><td class="n">10</td><td class="n">6.33</td><td>P2-04</td><td>Sí</td></tr>
+<tr><td>P2-07</td><td><span class="tag t4">T4</span></td><td>Mapper de UI para vuelo, journey y segmento: flightStatus 1–8 → <code>TripStatus</code>, disrupción desde <code>queue</code> (en lugar de disruptionCode/scheduleChange), codeshare, Frontier, internacional, escalas.</td><td>features/mytrips-home (BookingCardPagedHelper)</td><td class="n">10</td><td class="n">14</td><td class="n">16</td><td class="n">13.67</td><td>P2-01</td><td>Sí</td></tr>
+<tr><td>P2-08</td><td><span class="tag t4">T4</span></td><td>Mapper de UI para check-in, pase de abordar y acciones: <code>passengerSegment</code> y <code>passengerSummary</code> en lugar de <code>passengers[]</code>.</td><td>features/mytrips-home (TripCardParametersMapper)</td><td class="n">8</td><td class="n">12</td><td class="n">16</td><td class="n">12.00</td><td>P2-01</td><td>Sí</td></tr>
+<tr><td>P2-09</td><td><span class="tag t4">T4</span></td><td>Pending Payment (AC 15) + payment y TUA: <code>payment.state/action</code>, expiración 3RPT + 2 h y HOLD/otros con <code>holdExpiration</code>, zonas horarias, analytics de pending payment.</td><td>features/mytrips-home · domain/booking</td><td class="n">6</td><td class="n">8</td><td class="n">12</td><td class="n">8.33</td><td>P2-01</td><td>Sí</td></tr>
+<tr><td>P2-10</td><td><span class="tag t4">T4</span></td><td>Actualizar los tests de mappers de UI (<code>BookingCardPagedHelperTest</code>, <code>…AdditionalTest</code>, <code>TripCardParametersMapperTest</code>).</td><td>features/mytrips-home (test)</td><td class="n">8</td><td class="n">12</td><td class="n">16</td><td class="n">12.00</td><td>P2-07, P2-08, P2-09</td><td>Sí</td></tr>
+<tr><td>P2-11</td><td><span class="tag t4">T4</span></td><td>MVI de paginación en cliente: lotes en orden, <code>upcoming</code> por tab, último lote &lt;5, conservar el orden (14.10) y "renderizar solo hasta lo seguro" (página T2).</td><td>features/mytrips-home</td><td class="n">10</td><td class="n">14</td><td class="n">16</td><td class="n">13.67</td><td>P2-01 (con fakes)</td><td>No (hotspot)</td></tr>
+<tr><td>P2-12</td><td><span class="tag t4">T4</span></td><td>Fallo parcial (18.2): conservar los lotes exitosos, reintento por lote, adaptar la recuperación de apellido (<code>BookingRecoveryManagerImpl</code>, <code>BookingRecoveryRepositoryImpl</code>).</td><td>features/mytrips-home · domain/booking · data/mytrips</td><td class="n">6</td><td class="n">10</td><td class="n">16</td><td class="n">10.33</td><td>P2-11</td><td>No (hotspot)</td></tr>
+<tr class="cp"><td>P2-13</td><td><span class="tag tx">X</span></td><td>Tests de integración del store: paginación, orden, fallo parcial, pending payment.</td><td>features/mytrips-home (test)</td><td class="n">8</td><td class="n">12</td><td class="n">16</td><td class="n">12.00</td><td>P2-05, P2-06, P2-10, P2-12</td><td>Parcial</td></tr>
+<tr class="cp"><td>P2-14</td><td><span class="tag tx">X</span></td><td>Retirar v1 (DTOs, método, <code>TripSorter</code> residual) según C-22. Gates de ArchUnit, detekt, ktlint y schema.</td><td>varios</td><td class="n">4</td><td class="n">6</td><td class="n">10</td><td class="n">6.33</td><td>P2-13</td><td>No</td></tr>
+<tr><td>P2-15</td><td><span class="tag tx">X</span></td><td>Code review y ajustes.</td><td>—</td><td class="n">8</td><td class="n">12</td><td class="n">16</td><td class="n">12.00</td><td>distribuido</td><td>Sí</td></tr>
+<tr><td>P2-16</td><td><span class="tag tx">X</span></td><td>Soporte a QA, ciclo 1, y bugs.</td><td>—</td><td class="n">6</td><td class="n">8</td><td class="n">12</td><td class="n">8.33</td><td>P2-14</td><td>Máx. 2 devs</td></tr>
+<tr><td>P2-17</td><td><span class="tag tx">X</span></td><td>Soporte a QA, ciclo 2 (regresión), y bugs.</td><td>—</td><td class="n">6</td><td class="n">8</td><td class="n">12</td><td class="n">8.33</td><td>P2-16</td><td>Máx. 2 devs</td></tr>
+<tr class="total"><td colspan="4">Total Fase 2</td><td class="n">116</td><td class="n">170</td><td class="n">234</td><td class="n">171.67</td><td colspan="2">= 24.38 días</td></tr>
+</table>
+<table>
+<tr><th>Subtotal Fase 2 por bloque</th><th class="n">PERT (h)</th><th class="n">Días</th></tr>
+<tr><td><span class="tag t4">T4</span> endpoint, datos y persistencia (P2-02 a P2-06)</td><td class="n">48.67</td><td class="n">6.91</td></tr>
+<tr><td><span class="tag t4">T4</span> mappers de UI (P2-07, P2-08, P2-10)</td><td class="n">37.67</td><td class="n">5.35</td></tr>
+<tr><td><span class="tag t4">T4</span> Pending Payment (P2-09)</td><td class="n">8.33</td><td class="n">1.18</td></tr>
+<tr><td><span class="tag t4">T4</span> paginación y errores (P2-11, P2-12)</td><td class="n">24.00</td><td class="n">3.41</td></tr>
+<tr><td><span class="tag tx">X</span> P2-01, P2-13 a P2-17</td><td class="n">53.00</td><td class="n">7.53</td></tr>
+</table>
+
+<h3 id="trazabilidad">Trazabilidad AC → tarea</h3>
+<div class="two">
+<table>
+<tr><th>AC (Fase 1)</th><th>Tareas</th></tr>
+<tr><td>1.1, 1.5</td><td>P1-04, P1-14, P1-15</td></tr>
+<tr><td>1.2, 1.3</td><td>P1-04</td></tr>
+<tr><td>1.4</td><td>P1-03</td></tr>
+<tr><td>1.6</td><td>P1-14, P1-15</td></tr>
+<tr><td>1.7, 1.8</td><td>P1-13 (bloqueado por C-01)</td></tr>
+<tr><td>18.1</td><td>P1-04, P1-15, P1-17</td></tr>
+<tr><td>2.1–2.4</td><td>P1-08</td></tr>
+<tr><td>2.5</td><td>P1-07 (upsert), P2-06</td></tr>
+<tr><td>3.1–3.6</td><td>P1-06, P1-07, P1-08</td></tr>
+<tr><td>16.1, 16.3, 16.9</td><td>P1-11</td></tr>
+<tr><td>16.2, 16.4, 11.6</td><td>P1-11 + P1-15 (recálculo)</td></tr>
+<tr><td>16.5–16.8, 16.10</td><td>P1-12</td></tr>
+<tr><td>16.11</td><td>P1-11; P2-06 (C-14)</td></tr>
+<tr><td>17.1</td><td>P1-09, P1-10</td></tr>
+<tr><td>17.2, 17.3, 17.7, 17.8</td><td>P1-10</td></tr>
+<tr><td>17.4</td><td>P1-06</td></tr>
+<tr><td>17.5, 17.6</td><td>P1-15, P1-17</td></tr>
+<tr><td>4.1, 4.2</td><td>P1-14, P1-17</td></tr>
+<tr><td>5.x, 6.1, 6.2, 7.1, 7.2, 8.x, 9.x, 10.1</td><td>P1-13</td></tr>
+<tr><td>6.3, 11.1–11.3, 11.5, 11.7, 12.x</td><td>P1-14</td></tr>
+<tr><td>7.3</td><td>P1-15</td></tr>
+<tr><td>11.4</td><td>P1-08 (dato), P1-16 (posición)</td></tr>
+<tr><td>13.1–13.3</td><td>P1-02, P1-14, P1-17</td></tr>
+</table>
+<table>
+<tr><th>AC (Fase 2)</th><th>Tareas</th></tr>
+<tr><td>14.1–14.5</td><td>P2-02, P2-04</td></tr>
+<tr><td>14.6–14.9</td><td>P2-04, P2-11</td></tr>
+<tr><td>14.10</td><td>P2-11, P2-13</td></tr>
+<tr><td>15.1–15.4</td><td>P2-09 (bloqueado por C-05)</td></tr>
+<tr><td>18.2</td><td>P2-04, P2-12, P2-13</td></tr>
+<tr><td>BR 5 "display booking, journey, payment, disruption"</td><td>P2-07, P2-08, P2-09</td></tr>
+<tr><td>T2 "Handle of old data"</td><td>P2-11</td></tr>
+<tr><td>T2 "after the response… edit journey"</td><td>P2-06</td></tr>
+<tr><td>BR General (no regresión)</td><td>P2-05, P2-14, P2-16, P2-17</td></tr>
+</table>
+</div>
+</section>
+
+<!-- ============================ 5 ============================ -->
+<section id="dependencias">
+<h2>5. Dependencias, ruta crítica y paralelización</h2>
+
+<h3>Fase 1 · grafo de dependencias</h3>
+<pre class="mermaid">
+flowchart LR
+  classDef crit fill:#5a1e1e,stroke:#f85149,color:#fff
+  classDef norm fill:#1f2d44,stroke:#58a6ff,color:#fff
+  classDef qa fill:#30363d,stroke:#8b949e,color:#fff
+  P1_01["P1-01 Contratos 6h"]:::crit --> P1_03["P1-03 T1 DS 8.3h"]:::norm
+  P1_01 --> P1_06["P1-06 Room 12h"]:::crit
+  P1_01 --> P1_13["P1-13 Clasificador 12h"]:::crit
+  P1_02["P1-02 Flag 5.3h"]:::norm --> P1_14
+  P1_03 --> P1_04["P1-04 T1 repo/UC 8.3h"]:::norm
+  P1_04 --> P1_05["P1-05 Consumidores T1 6.3h"]:::norm
+  P1_04 --> P1_09["P1-09 Persistir cliente 6h"]:::norm
+  P1_04 --> P1_15
+  P1_06 --> P1_07["P1-07 Repo guardadas 10.3h"]:::crit
+  P1_07 --> P1_08["P1-08 Guardar Search/Forgot 8.3h"]:::norm
+  P1_07 --> P1_09
+  P1_07 --> P1_10["P1-10 Logout 12h"]:::norm
+  P1_07 --> P1_11["P1-11 Hooks Move/Change 10.3h"]:::norm
+  P1_07 --> P1_12["P1-12 Hooks Refund/Cancel 12h"]:::norm
+  P1_07 --> P1_15
+  P1_13 --> P1_14["P1-14 Merge+Sort 10.3h"]:::crit
+  P1_14 --> P1_15["P1-15 Middleware carga 12h"]:::crit
+  P1_15 --> P1_16["P1-16 Lotes + reducer 12h"]:::crit
+  P1_16 --> P1_17["P1-17 Store tests 12h"]:::crit
+  P1_08 --> P1_17
+  P1_09 --> P1_17
+  P1_10 --> P1_17
+  P1_17 --> P1_18["P1-18 Regresión + gates 6.3h"]:::crit
+  P1_05 --> P1_18
+  P1_10 --> P1_18
+  P1_11 --> P1_18
+  P1_12 --> P1_18
+  P1_18 --> P1_20["P1-20 QA 1"]:::qa --> P1_21["P1-21 QA 2"]:::qa
+  P1_19["P1-19 Code review (distribuido)"]:::qa
+</pre>
+<p><b>Ruta crítica Fase 1 = 70.67 h</b> (sin CR ni QA). Hay dos cadenas de la misma longitud: P1-01 → P1-13 → P1-14 → P1-15 → P1-16 → P1-17 → P1-18 y P1-01 → P1-06 → P1-07 → P1-15 → P1-16 → P1-17 → P1-18. La cadena de T1 (P1-03 → P1-04 → P1-15) mide 65.00 h y tiene 5.67 h de holgura.</p>
+
+<h3>Fase 2 · grafo de dependencias (estrategia recomendada: interfaces primero + fakes)</h3>
+<pre class="mermaid">
+flowchart LR
+  classDef crit fill:#5a1e1e,stroke:#f85149,color:#fff
+  classDef norm fill:#1f2d44,stroke:#58a6ff,color:#fff
+  classDef qa fill:#30363d,stroke:#8b949e,color:#fff
+  P2_01["P2-01 Contratos v2 6h"]:::crit --> P2_02["P2-02 DTO + Retrofit 12h"]:::crit
+  P2_01 --> P2_07["P2-07 Mapper vuelo 13.7h"]:::norm
+  P2_01 --> P2_08["P2-08 Mapper check-in 12h"]:::norm
+  P2_01 --> P2_09["P2-09 Pending payment 8.3h"]:::norm
+  P2_01 --> P2_11["P2-11 Paginación MVI 13.7h"]:::norm
+  P2_02 --> P2_03["P2-03 Mapper DTO 8.3h"]:::crit
+  P2_03 --> P2_04["P2-04 Repo/UC lotes 10h"]:::crit
+  P2_04 --> P2_05["P2-05 Offline + Home 12h"]:::crit
+  P2_04 --> P2_06["P2-06 Actualizar guardadas 6.3h"]:::norm
+  P2_07 --> P2_10["P2-10 Tests mappers UI 12h"]:::norm
+  P2_08 --> P2_10
+  P2_09 --> P2_10
+  P2_11 --> P2_12["P2-12 Fallo parcial + recovery 10.3h"]:::norm
+  P2_05 --> P2_13["P2-13 Store tests 12h"]:::crit
+  P2_06 --> P2_13
+  P2_10 --> P2_13
+  P2_12 --> P2_13
+  P2_13 --> P2_14["P2-14 Retiro v1 + gates 6.3h"]:::crit
+  P2_14 --> P2_16["P2-16 QA 1"]:::qa --> P2_17["P2-17 QA 2"]:::qa
+  P2_15["P2-15 Code review (distribuido)"]:::qa
+</pre>
+<p><b>Ruta crítica Fase 2 = 66.67 h</b>: P2-01 → P2-02 → P2-03 → P2-04 → P2-05 → P2-13 → P2-14. Si P2-11 espera al repositorio real (P2-04) en lugar de arrancar con fakes, la ruta crítica pasa a P2-01 → P2-02 → P2-03 → P2-04 → P2-11 → P2-12 → P2-13 → P2-14 = <b>78.67 h</b>.</p>
+
+<h3>Tareas que bloquean y cómo desbloquearlas</h3>
+<table>
+<tr><th>Bloqueante</th><th>Qué bloquea</th><th>Desbloqueo propuesto</th></tr>
+<tr><td>P1-01 / P2-01 contratos de dominio</td><td>Todo</td><td>Kick-off de 1 día: firmar modelos e interfaces y publicar fakes en memoria y fixtures (JSON de los ejemplos de Confluence) en <code>testFixtures</code>.</td></tr>
+<tr><td>P1-06 migración Room v22 → v23</td><td>Toda la cadena T2 (P1-07 a P1-12)</td><td>Fijar el esquema el día 1. Los hooks P1-08, P1-11 y P1-12 programan contra la interfaz de P1-01 con un repo fake. Una sola persona dueña de <code>VolarisDataBase</code> para no chocar con otras migraciones en vuelo.</td></tr>
+<tr><td>P1-14 composer</td><td>P1-15 y P1-16</td><td>Firma acordada en P1-01. P1-15 puede arrancar con un composer stub (orden simple) y cambiarlo al terminar P1-14.</td></tr>
+<tr><td>P1-15 y P1-16 / P2-11 y P2-12 (<code>MyTripsHomeMiddleware</code>, 2,429 líneas)</td><td>Tests de store</td><td>Un solo dueño del archivo por fase. Los demás tocan el middleware solo en ramas cortas: P1-08 cambia únicamente <code>onAddTripClick</code>.</td></tr>
+<tr><td>P2-02 y P2-03 contrato DTO v2</td><td>P2-04 a P2-06</td><td>Usar el JSON del ejemplo de Confluence con MockWebServer y un interceptor de mock en debug mientras el backend no esté en UAT (→ C-24).</td></tr>
+<tr><td>P2-04 repositorio</td><td>P2-11 y P2-12</td><td>Use case fake que devuelve lotes y fallos configurables (estrategia recomendada).</td></tr>
+<tr><td>Respuestas a C-01, C-02, C-04 y C-05</td><td>P1-13, P1-14, P1-10 y P2-09</td><td>Llevarlas a refinement antes del sprint. Mientras tanto, implementar detrás de la interfaz con la regla documentada y dejar el punto de extensión marcado.</td></tr>
+</table>
+</section>
+
+<!-- ============================ 6 ============================ -->
+<section id="staffing">
+<h2>6. Escenarios de staffing</h2>
+<div class="info"><b>Modelo.</b> Duración(N) = [makespan de desarrollo con N devs (list scheduling sobre el grafo, prioridad por cola más larga) + code review / N + QA1 y QA2 repartidos entre min(N, 2) devs] × (1 + 0.08 × (N − 1)).<br>
+<b>Overhead de 8 % por dev adicional:</b> ~0.5 h/día por dev de sincronización (daily técnica, acuerdo de contratos, review cruzado), que es ≈ 7 % de 7.04 h, más la resolución de conflictos en archivos hotspot compartidos (<code>MyTripsHomeMiddleware.kt</code>, <code>MyTripsHomeReducer.kt</code>, <code>VolarisDataBase.kt</code>, <code>BookingCardPagedHelper.kt</code>). Es lineal porque cada dev nuevo agrega canales de integración sobre los mismos archivos.</div>
+
+<h3>Fase 1</h3>
+<table>
+<tr><th>Devs</th><th class="n">Makespan dev</th><th class="n">+ CR</th><th class="n">+ QA</th><th class="n">Base</th><th class="n">Overhead</th><th class="n">Duración (h)</th><th class="n">Días</th><th class="n">Esfuerzo total (h-dev)</th><th>Nota</th></tr>
+<tr><td>1</td><td class="n">170.00</td><td class="n">12.00</td><td class="n">16.67</td><td class="n">198.67</td><td class="n">0 %</td><td class="n">198.67</td><td class="n">28.22</td><td class="n">198.67</td><td>Secuencial</td></tr>
+<tr><td>2</td><td class="n">89.33</td><td class="n">6.00</td><td class="n">8.33</td><td class="n">103.67</td><td class="n">8 %</td><td class="n">111.96</td><td class="n">15.90</td><td class="n">214.56</td><td>−44 % vs 1 dev</td></tr>
+<tr><td><b>3</b></td><td class="n">70.67</td><td class="n">4.00</td><td class="n">8.33</td><td class="n">83.00</td><td class="n">16 %</td><td class="n"><b>96.28</b></td><td class="n"><b>13.68</b></td><td class="n">230.46</td><td><b>Máximo útil</b>: alcanza la ruta crítica</td></tr>
+<tr><td>4</td><td class="n">70.67</td><td class="n">3.00</td><td class="n">8.33</td><td class="n">82.00</td><td class="n">24 %</td><td class="n">101.68</td><td class="n">14.44</td><td class="n">246.35</td><td>No baja la ruta crítica; el overhead la empeora</td></tr>
+</table>
+
+<div class="gantt" id="g-p1-2"></div>
+<div class="gantt" id="g-p1-3"></div>
+
+<h4>División real de tareas en Fase 1</h4>
+<div class="two">
+<table>
+<tr><th colspan="2">2 developers</th></tr>
+<tr><td>Dev A (dominio + MVI)</td><td>P1-01, P1-13, P1-03, P1-14, P1-15, P1-16, P1-12, P1-11, P1-18</td></tr>
+<tr><td>Dev B (persistencia + integraciones)</td><td>P1-02, P1-06, P1-07, P1-04, P1-10, P1-08, P1-09, P1-17, P1-05</td></tr>
+</table>
+<table>
+<tr><th colspan="2">3 developers</th></tr>
+<tr><td>Dev A (ruta crítica: dominio + MVI)</td><td>P1-01, P1-13, P1-14, P1-15, P1-16, P1-17, P1-18</td></tr>
+<tr><td>Dev B (Room + logout + refunds)</td><td>P1-02, P1-06, P1-07, P1-10, P1-12</td></tr>
+<tr><td>Dev C (T1 + hooks)</td><td>P1-03, P1-04, P1-05, P1-08, P1-09, P1-11</td></tr>
+</table>
+</div>
+<p class="meta">Con 3 devs, B y C quedan libres desde ~52 h. Esa capacidad cubre el code review y la preparación de QA, y ya está descontada en "+ CR".</p>
+
+<h3>Fase 2</h3>
+<table>
+<tr><th>Devs</th><th class="n">Makespan dev</th><th class="n">+ CR</th><th class="n">+ QA</th><th class="n">Base</th><th class="n">Overhead</th><th class="n">Duración (h)</th><th class="n">Días</th><th class="n">Esfuerzo total (h-dev)</th><th>Nota</th></tr>
+<tr><td>1</td><td class="n">143.00</td><td class="n">12.00</td><td class="n">16.67</td><td class="n">171.67</td><td class="n">0 %</td><td class="n">171.67</td><td class="n">24.38</td><td class="n">171.67</td><td>Secuencial</td></tr>
+<tr><td>2</td><td class="n">85.00</td><td class="n">6.00</td><td class="n">8.33</td><td class="n">99.33</td><td class="n">8 %</td><td class="n">107.28</td><td class="n">15.24</td><td class="n">185.40</td><td>Igual con o sin fakes</td></tr>
+<tr><td><b>3</b></td><td class="n">68.67</td><td class="n">4.00</td><td class="n">8.33</td><td class="n">81.00</td><td class="n">16 %</td><td class="n"><b>93.96</b></td><td class="n"><b>13.35</b></td><td class="n">199.13</td><td><b>Máximo útil</b> (con fakes)</td></tr>
+<tr><td>3 sin fakes</td><td class="n">78.67</td><td class="n">4.00</td><td class="n">8.33</td><td class="n">91.00</td><td class="n">16 %</td><td class="n">105.56</td><td class="n">14.99</td><td class="n">199.13</td><td>Gana 0.25 días vs 2 devs: no compensa, máximo útil = 2</td></tr>
+<tr><td>4</td><td class="n">66.67</td><td class="n">3.00</td><td class="n">8.33</td><td class="n">78.00</td><td class="n">24 %</td><td class="n">96.72</td><td class="n">13.74</td><td class="n">212.87</td><td>Ya está en la ruta crítica; el overhead la empeora</td></tr>
+</table>
+
+<div class="gantt" id="g-p2-2"></div>
+<div class="gantt" id="g-p2-3"></div>
+
+<h4>División real de tareas en Fase 2</h4>
+<div class="two">
+<table>
+<tr><th colspan="2">2 developers</th></tr>
+<tr><td>Dev A (datos + MVI)</td><td>P2-01, P2-02, P2-03, P2-04, P2-11, P2-12, P2-06, P2-13, P2-14</td></tr>
+<tr><td>Dev B (UI + persistencia)</td><td>P2-07, P2-08, P2-09, P2-10, P2-05</td></tr>
+</table>
+<table>
+<tr><th colspan="2">3 developers (con fakes)</th></tr>
+<tr><td>Dev A (ruta crítica: datos)</td><td>P2-01, P2-02, P2-03, P2-04, P2-05, P2-13, P2-14</td></tr>
+<tr><td>Dev B (mappers UI)</td><td>P2-07, P2-08, P2-06</td></tr>
+<tr><td>Dev C (MVI + pending payment)</td><td>P2-11, P2-12, P2-09, P2-10</td></tr>
+</table>
+</div>
+<div class="legend"><span><i style="background:#8e2420"></i>Ruta crítica</span><span><i style="background:#1f6feb"></i>Tarea</span><span><i style="background:#3a3f47"></i>Cierre: CR residual + QA 1 + QA 2</span><span>Eje en horas efectivas, sin overhead.</span></div>
+</section>
+
+<!-- ============================ 7 ============================ -->
+<section id="aclaraciones">
+<div class="alertbox">
+<h2>⚠ 7. Puntos que requieren aclaración</h2>
+<p>Cada punto viene de un hueco o una contradicción en Confluence, o de un conflicto con el código actual. El <b>impacto</b> son las horas que se suman a la estimación base si la respuesta sale en contra. <b>Exposición total: Fase 1 +124 h · Fase 2 +70 h.</b></p>
+<table>
+<tr><th>#</th><th>Sev.</th><th>Pregunta</th><th>Para</th><th class="n">Impacto</th><th>Fase</th><th>Evidencia</th></tr>
+<tr><td>C-01</td><td><span class="tag sev-c">Crítica</span></td><td>T1 no trae arrival/ETA por journey. ¿<code>previous</code>/<code>next</code> se calculan con la salida o con la ETA? ¿Puede T1 devolver la llegada (local y UTC) para aplicar la regla de ETA (AC 1.7, 5–8) a las reservas del cliente?</td><td>Backend</td><td class="n">+20 h</td><td>F1</td><td><a href="https://applaudostudios.atlassian.net/wiki/spaces/VE/pages/10409050113" target="_blank" rel="noopener">T1</a> · <a href="https://applaudostudios.atlassian.net/wiki/spaces/VE/pages/10485989477" target="_blank" rel="noopener">HU BR 1 "Important"</a></td></tr>
+<tr><td>C-02</td><td><span class="tag sev-c">Crítica</span></td><td>T1 da horas locales sin offset y el switch ON (13.2) exige <code>departureTimeUTC</code>. ¿El backend agrega los campos UTC? La página Sorting mezcla local y UTC en la misma lista, y el dominio de estaciones no tiene zona horaria para convertir.</td><td>Backend</td><td class="n">+10 h</td><td>F1</td><td><a href="https://applaudostudios.atlassian.net/wiki/spaces/VE/pages/10409345060" target="_blank" rel="noopener">Sorting</a></td></tr>
+<tr><td>C-03</td><td><span class="tag sev-c">Crítica</span></td><td>T4 es Fase 2. ¿Con qué endpoint se pintan las tarjetas en Fase 1? Supuesto S-01: v1 en lotes de 5 con <code>currentPage=1</code>. ¿v1 respeta el orden y el filtro <code>upcoming</code> mantiene un vuelo en curso (AC 6)?</td><td>PO / Backend</td><td class="n">+12 h (o adelantar ~49 h de T4 a F1)</td><td>F1</td><td><a href="https://applaudostudios.atlassian.net/wiki/spaces/~43663197/pages/10513547265" target="_blank" rel="noopener">Mapeo</a> · VolarisMyTripsApiClient, línea 104</td></tr>
+<tr><td>C-04</td><td><span class="tag sev-c">Crítica</span></td><td>17.1–17.3 piden conservar las reservas de la cuenta tras el logout; 17.7–17.8 piden no exponerlas a otro cliente. ¿Qué ve un anónimo o un cliente B? ¿Se re-verifica PNR + apellido? Home Preflight hoy lee esas filas.</td><td>PO / Seguridad</td><td class="n">+16 h</td><td>F1</td><td><a href="https://applaudostudios.atlassian.net/wiki/spaces/VE/pages/10485989477" target="_blank" rel="noopener">HU BR 7, AC 17</a> · AuthenticationRepositoryImpl, línea 496</td></tr>
+<tr><td>C-05</td><td><span class="tag sev-c">Crítica</span></td><td>AC 15 distingue 3RPT (+2 h) de HOLD (holdExpiration), pero <code>hasHoldCharge</code> vale true para ambos y v2 no trae SSR ni cargos. ¿Qué campo los distingue? Además, hoy la app usa +24 h para HOLD/3RPT: ¿se reemplaza?</td><td>Backend / PO</td><td class="n">+12 h</td><td>F2</td><td><a href="https://applaudostudios.atlassian.net/wiki/spaces/VE/pages/10408984601" target="_blank" rel="noopener">T4 Payment Object</a> · TripCardParametersMapper, línea ~358</td></tr>
+<tr><td>C-06</td><td><span class="tag sev-c">Crítica</span></td><td>v2 no documenta errores (HTTP ni por PNR) y elimina <code>errorReason</code>, que hoy dispara la recuperación de apellido (<code>INVALID_LastName</code>). ¿Cómo reporta un PNR inválido o un apellido distinto? ¿Qué es un "fallo de lote"?</td><td>Backend</td><td class="n">+12 h</td><td>F2</td><td>T4 · BookingByCriteriaPaged.kt</td></tr>
+<tr><td>C-07</td><td><span class="tag sev-a">Alta</span></td><td>Paridad de campos entre v2 y la tarjeta actual: paxType por pasajero, bundle, servicios y asientos, checkInStatuses por pasajero, <code>payment.status</code> "en validación" y priceStatus. ¿Se pierde alguna acción de la tarjeta?</td><td>Backend / PO</td><td class="n">+12 h</td><td>F2</td><td>BookingCardPagedHelper.kt, TripCardParametersMapper.kt</td></tr>
+<tr><td>C-08</td><td><span class="tag sev-a">Alta</span></td><td>Auth y host de T1: ¿"Logged in User Session Token" es el token de sesión principal? ¿<code>api/booking/app/…</code> va en el mismo host que hoy? ¿Qué códigos de error devuelve?</td><td>Backend</td><td class="n">+6 h</td><td>F1</td><td>T1 · AuthInterceptorMyTrips</td></tr>
+<tr><td>C-09</td><td><span class="tag sev-a">Alta</span></td><td>¿Se retira el endpoint customer-number viejo? Sin <code>bookingStatus</code>, ¿el backend ya excluye HOLD_CANCELED? Home usa bookingStatus para las llaves de Crashlytics.</td><td>Backend / PO</td><td class="n">+6 h</td><td>F1</td><td>HomeMiddleware, línea ~1348</td></tr>
+<tr><td>C-10</td><td><span class="tag sev-a">Alta</span></td><td>"Cancel Flight – Other Fares": no se encontró un flujo nativo separado en Android. ¿Es webview o parte de Online Refund? ¿Cómo se detecta el éxito?</td><td>PO</td><td class="n">+10 h</td><td>F1</td><td>HU BR 2 / AC 16.8</td></tr>
+<tr><td>C-11</td><td><span class="tag sev-a">Alta</span></td><td>La página T2 agrega "PNR comprado en la app" como fuente de guardado y la HU (AC 2) no. ¿Entra en alcance?</td><td>PO / Backend</td><td class="n">+8 h</td><td>F1</td><td><a href="https://applaudostudios.atlassian.net/wiki/spaces/VE/pages/10407280662" target="_blank" rel="noopener">T2</a></td></tr>
+<tr><td>C-12</td><td><span class="tag sev-a">Alta</span></td><td>AC 10 y "estatus operativo que permite la transición" (7.1, 8.2): T1 no trae estatus. ¿Qué estatus bloquean el paso a Flown (CANCELED 4/5/8, REACCOMMODATION)? ¿Cómo se sabe en Fase 1?</td><td>PO / Backend</td><td class="n">+10 h</td><td>F1</td><td>HU AC 7, 8, 10</td></tr>
+<tr><td>C-13</td><td><span class="tag sev-m">Media</span></td><td>La HU dice "Requires Feature Flags? NO" y la tabla de Feature Flag dice NA, pero BR 4 y AC 13 exigen un switch. ¿Nombre, default y plataforma (Firebase RC)?</td><td>PO</td><td class="n">+4 h</td><td>F1</td><td>HU Dependency Table</td></tr>
+<tr><td>C-14</td><td><span class="tag sev-m">Media</span></td><td>16.11 (reconciliar tras una modificación) en Fase 1: ¿basta con <code>getbookingbyrecordlocatorandlastname</code> o espera a T4? El mapeo pide confirmarlo.</td><td>PO</td><td class="n">+6 h</td><td>F1</td><td><a href="https://applaudostudios.atlassian.net/wiki/spaces/~43663197/pages/10513547265" target="_blank" rel="noopener">Mapeo</a></td></tr>
+<tr><td>C-15</td><td><span class="tag sev-m">Media</span></td><td>T1 solo devuelve PNR de hasta 1 año. ¿Las reservas guardadas manualmente tienen retención? ¿Hay que purgarlas?</td><td>Backend / PO</td><td class="n">+6 h</td><td>F1</td><td>T1</td></tr>
+<tr><td>C-16</td><td><span class="tag sev-m">Media</span></td><td>Frecuencia de llamada a T1 ("cada vez que el usuario llega a la página" y de nuevo al cambiar de tab) frente a la caché TTL actual (<code>myTripsCacheDurationSeconds</code>). ¿Se mantiene la caché?</td><td>Backend</td><td class="n">+4 h</td><td>F1</td><td>T1 · MyTripsCacheState</td></tr>
+<tr><td>C-17</td><td><span class="tag sev-m">Media</span></td><td><code>expiredAfterSTA</code> está en el request de ejemplo de T4 pero no documentado. ¿Se envía <code>flightCardExpiration.expiredAfterSTA</code>, que ya existe en la app?</td><td>Backend</td><td class="n">+4 h</td><td>F2</td><td>T4 Request Body</td></tr>
+<tr><td>C-18</td><td><span class="tag sev-m">Media</span></td><td>Inconsistencias en el documento T4: <code>tuaStatus: 3</code> con enum 0–2; <code>hasPositiveBalance</code> en la tabla Journeys pero no en el ejemplo; <code>frontier</code> en Designator sin ejemplo; "destinator" en Segments.</td><td>Backend</td><td class="n">+4 h</td><td>F2</td><td>T4</td></tr>
+<tr><td>C-19</td><td><span class="tag sev-m">Media</span></td><td>Si T4 omite un PNR pedido (no encontrado o cancelado), ¿se elimina del almacenamiento local?</td><td>Backend / PO</td><td class="n">+6 h</td><td>F2</td><td>T4 · AC 18</td></tr>
+<tr><td>C-20</td><td><span class="tag sev-m">Media</span></td><td>No hay diseño (Designer NA). ¿Cómo se ven el fallo parcial (18.2), la carga por lote, un PNR en ambas secciones y la pérdida de posición del Known Issue?</td><td>UX / PO</td><td class="n">+8 h</td><td>F2</td><td>HU Design</td></tr>
+<tr><td>C-21</td><td><span class="tag sev-m">Media</span></td><td>Analytics: "NO" en dependencias y "Trigger PENDING" en la tabla. <code>analyticsForMyTrips</code> envía hoy los PNR de la página y los de pending payment; con lotes cambia la semántica.</td><td>PO</td><td class="n">+2 h F1 / +2 h F2</td><td>F1, F2</td><td>HU Analytics</td></tr>
+<tr><td>C-22</td><td><span class="tag sev-m">Media</span></td><td>¿Se retira v1 tras la Fase 2? BookingRecovery y Home Preflight dependen hoy de v1 y <code>BookingPagedEntity</code>.</td><td>Backend / PO</td><td class="n">+6 h</td><td>F2</td><td>BookingRecoveryRepositoryImpl</td></tr>
+<tr><td>C-23</td><td><span class="tag sev-m">Media</span></td><td>AC 15 tiene fechas propias (UAT 4 de enero, prod 14 de enero). ¿Es un release separado del resto de la Fase 2?</td><td>PO</td><td class="n">0 h (planificación)</td><td>F2</td><td>HU §6</td></tr>
+<tr><td>C-24</td><td><span class="tag sev-m">Media</span></td><td>¿T1 y T4 ya están desplegados en UAT? ¿En qué fecha? Si no, hacen falta mocks.</td><td>Backend</td><td class="n">+4 h F1 / +4 h F2</td><td>F1, F2</td><td>No documentado</td></tr>
+</table>
+</div>
+</section>
+
+<!-- ============================ 8 ============================ -->
+<section id="supuestos">
+<h2>8. Supuestos y riesgos</h2>
+<h3>Supuestos</h3>
+<table>
+<tr><th>#</th><th>Supuesto</th><th>Si es falso</th></tr>
+<tr><td><span class="tag sup">S-01</span></td><td>En Fase 1 las tarjetas se siguen pintando con v1 <code>mobile/retrievebookingsbycriteria</code>, en lotes de ≤5 PNR en el orden de la app.</td><td>C-03</td></tr>
+<tr><td><span class="tag sup">S-02</span></td><td>T1 usa <code>AuthTokenSlot.MAIN_SESSION</code> (interceptor principal).</td><td>C-08</td></tr>
+<tr><td><span class="tag sup">S-03</span></td><td>La entidad nueva va en <code>VolarisDataBase</code> (v22 → v23) porque no depende de Remote Config. Es AutoMigration de tabla nueva.</td><td>+4 h si hace falta una migración manual</td></tr>
+<tr><td><span class="tag sup">S-04</span></td><td>Las referencias guardadas llevan owner (customerNumber o anónimo) para cumplir 17.7.</td><td>C-04</td></tr>
+<tr><td><span class="tag sup">S-05</span></td><td>En Fase 1 los horarios local y UTC de las reservas guardadas salen de la respuesta actual de <code>getbookingbyrecordlocatorandlastname</code>.</td><td>+6 h</td></tr>
+<tr><td><span class="tag sup">S-06</span></td><td>El switch de orden es un boolean de Firebase Remote Config con default OFF (local).</td><td>C-13</td></tr>
+<tr><td><span class="tag sup">S-07</span></td><td>No hay cambios de UI ni de copies (Designer NA, tabla Copies vacía).</td><td>C-20</td></tr>
+<tr><td><span class="tag sup">S-08</span></td><td>QA ejecuta las pruebas; aquí solo se estima el soporte y la corrección de bugs (2 ciclos por fase).</td><td>—</td></tr>
+<tr><td><span class="tag sup">S-09</span></td><td>BR 6 / AC 15 son Fase 2, como supone el propio mapeo.</td><td>Mover P2-09 (8.33 h) a F1 sin el modelo v2: +8 h</td></tr>
+<tr><td><span class="tag sup">S-10</span></td><td>Estimación solo para Android, con developers que conocen el repo. iOS queda fuera.</td><td>—</td></tr>
+<tr><td><span class="tag sup">S-11</span></td><td>Overhead de 8 % por cada dev adicional.</td><td>±</td></tr>
+<tr><td><span class="tag sup">S-12</span></td><td>El code review es trabajo distribuido y el QA se reparte entre un máximo de 2 devs.</td><td>—</td></tr>
+<tr><td><span class="tag sup">S-13</span></td><td>La Fase 2 arranca con la Fase 1 ya mergeada (usa el composer y el almacenamiento de F1).</td><td>Integrar dos ramas largas: +8 h</td></tr>
+</table>
+<h3>Riesgos técnicos</h3>
+<table>
+<tr><th>Riesgo</th><th>Impacto</th><th>Mitigación</th></tr>
+<tr><td><code>MyTripsHomeMiddleware.kt</code> (2,429 líneas) es el hotspot de las dos fases.</td><td>Conflictos de merge y regresiones en deep links, shortcuts, recuperación y DOD.</td><td>Un solo dueño. Cambios por intent. Tests de integración del store (P1-17, P2-13).</td></tr>
+<tr><td>Hay cuatro puntos que borran reservas BACKEND (logout, Main, Settings, AppConfig) y Home Preflight los lee.</td><td>Exposición de reservas de otra cuenta o pérdida de 17.x.</td><td>P1-10 con owner y regresión de Home en P1-18.</td></tr>
+<tr><td>Home Preflight y Main dependen de <code>BookingPagedEntity</code> (formato v1).</td><td>La Fase 2 rompe Preflight si no se migra.</td><td>P2-05.</td></tr>
+<tr><td>La recuperación de apellido (FR-009 / FR-019) depende de <code>errorReason</code> v1.</td><td>Regresión de una funcionalidad reciente.</td><td>P2-12 + C-06.</td></tr>
+<tr><td>ArchUnit <code>NetworkBoundaryTest</code> es <code>FreezingArchRule</code>.</td><td>El build falla si el método Retrofit nuevo recibe o devuelve un modelo de dominio.</td><td>Solo DTOs en Retrofit y mapeo en data. Gate en P1-18 y P2-14.</td></tr>
+<tr><td><code>Error.noConnection()</code> hace que <code>UseCaseFlow</code> salte <code>onFailure</code>.</td><td>18.1 y 18.2 no se cumplen si un mapper convierte un fallo en noConnection.</td><td>Usar <code>Error()</code> y cubrirlo con un test en P1-04 y P2-04.</td></tr>
+<tr><td><code>BookingCache</code> está acotado a <code>AppFlow.BOOKING</code>.</td><td>Datos nulos o viejos si se usa en My Trips.</td><td>No usarlo: almacenamiento propio en Room.</td></tr>
+<tr><td>Tiempo y zona horaria en los tests.</td><td>Tests frágiles en CI.</td><td><code>Clock</code> inyectable en el clasificador.</td></tr>
+<tr><td>Migraciones Room (v23 en F1, v24 en F2) mientras otras ramas también migran.</td><td>Choque de versiones y <code>verifyRoomSchemaLocks</code> en rojo.</td><td>Reservar el número de versión al iniciar cada fase.</td></tr>
+<tr><td>Analytics de My Trips (lista de PNR y pending payment).</td><td>Métricas que cambian sin aviso.</td><td>C-21.</td></tr>
+</table>
+</section>
+
+<!-- ============================ 9 ============================ -->
+<section id="rondas">
+<h2>9. Registro de rondas de revisión</h2>
+<table>
+<tr><th>Ronda</th><th>Verificación</th><th>Cambios</th></tr>
+<tr><td>1</td><td>Cada BR y AC de cada fase tiene al menos una tarea.</td><td>
+<ul>
+<li>Agregada P1-05: Home consume el endpoint customer-number para las llaves de Crashlytics y <code>bookingStatus</code> desaparece en el contrato nuevo.</li>
+<li>16.9 y 16.10 (operaciones fallidas) quedan explícitos en P1-11 y P1-12.</li>
+<li>18.1 queda explícito en P1-04 y P1-17.</li>
+<li>"Handle of old data" de la página T2 asignado a P2-11.</li>
+<li>Agregada P2-06 para la regla de T2 "editar journeys tras la respuesta de v2" y para 16.11.</li>
+</ul></td></tr>
+<tr><td>2</td><td>Cada cambio de endpoint T1–T4 tiene tareas de DTO, mapper, repositorio y tests.</td><td>
+<ul>
+<li>Agregada P2-05: v2 cambia el formato que <code>BookingPagedEntity</code> persiste para Home Preflight y Main.</li>
+<li>Recuperación de apellido (depende de <code>errorReason</code> v1) incluida en P2-12.</li>
+<li>Agregada P2-14: retiro de v1 y gates.</li>
+<li>T1 separado en DTO/Retrofit (P1-03) y repositorio/use case (P1-04).</li>
+</ul></td></tr>
+<tr><td>3</td><td>Dependencias sin ciclos, ruta crítica correcta, estimaciones consistentes.</td><td>
+<ul>
+<li>P1-02 (flag) ya no depende de P1-01.</li>
+<li>P1-09 ahora depende también de P1-04.</li>
+<li>P2-11 depende solo de P2-01 (con fakes): la ruta crítica de F2 baja de 78.67 h a 66.67 h. Se documentan los dos escenarios.</li>
+<li>Partidas las tareas de más de 16 h: el middleware de F1 (24 h) en P1-15 + P1-16; el mapper de UI de F2 en P2-07, P2-08, P2-09 y P2-10; QA en dos ciclos por fase.</li>
+<li>Hooks armonizados (O 8 / P 10–12 / Pe 14–16).</li>
+</ul></td></tr>
+<tr><td>4</td><td>Todo supuesto marcado y toda pregunta con impacto. Totales recalculados.</td><td><b>Sin cambios.</b> Totales F1 = 1192/6 = 198.67 h y F2 = 1030/6 = 171.67 h verificados; los 90 sub-AC (75 + 15) están trazados. Revisión cerrada.</td></tr>
+</table>
+</section>
+
+<!-- ============================ 10 ============================ -->
+<section id="referencias">
+<h2>10. Referencias</h2>
+<table>
+<tr><th>Documento</th><th>Versión leída</th><th>Enlace</th></tr>
+<tr><td>HU · [Improvement] My Trips Flight Listing Optimization, Booking Retrieval, Sorting &amp; Persistence</td><td>v8 · 2026-11-12</td><td><a href="https://applaudostudios.atlassian.net/wiki/spaces/VE/pages/10485989477" target="_blank" rel="noopener">10485989477</a></td></tr>
+<tr><td>Mapping of BR and AC for HU by Phase</td><td>v1 · 2026-11-12</td><td><a href="https://applaudostudios.atlassian.net/wiki/spaces/~43663197/pages/10513547265" target="_blank" rel="noopener">10513547265</a></td></tr>
+<tr><td>[BR] V2 Mytrips List (página padre del backend)</td><td>v4 · 2026-11-11</td><td><a href="https://applaudostudios.atlassian.net/wiki/spaces/VE/pages/10408361989" target="_blank" rel="noopener">10408361989</a></td></tr>
+<tr><td>T1 · Get customer bookings</td><td>v6 · 2026-11-12</td><td><a href="https://applaudostudios.atlassian.net/wiki/spaces/VE/pages/10409050113" target="_blank" rel="noopener">10409050113</a></td></tr>
+<tr><td>T2 · Save / Store other bookings</td><td>v8 · 2026-11-11</td><td><a href="https://applaudostudios.atlassian.net/wiki/spaces/VE/pages/10407280662" target="_blank" rel="noopener">10407280662</a></td></tr>
+<tr><td>T3 · Sorting</td><td>v1 · 2026-10-12</td><td><a href="https://applaudostudios.atlassian.net/wiki/spaces/VE/pages/10409345060" target="_blank" rel="noopener">10409345060</a></td></tr>
+<tr><td>T4 · Retrieve Bookings By Criteria</td><td>v3</td><td><a href="https://applaudostudios.atlassian.net/wiki/spaces/VE/pages/10408984601" target="_blank" rel="noopener">10408984601</a></td></tr>
+</table>
+<p class="meta">Código citado (rutas relativas al repo): <code>features/mytrips-home/…/MyTripsHomeMiddleware.kt</code>, <code>…/MyTripsHomeReducer.kt</code>, <code>…/TripSorter.kt</code>, <code>…/BookingCardPagedHelper.kt</code>, <code>…/TripCardParametersMapper.kt</code>, <code>datasource/volarisapi/…/VolarisMyTripsApiClient.kt</code>, <code>…/BookingsByCustomerNumberDto.kt</code>, <code>…/BookingsByCriteriaPagedResponseDto.kt</code>, <code>…/AuthInterceptorMyTrips.kt</code>, <code>datasource/datapersistence/…/VolarisDataBase.kt</code> (v22), <code>…/BookingEntity.kt</code>, <code>…/BookingPagedEntity.kt</code>, <code>data/authentication/…/AuthenticationRepositoryImpl.kt</code>, <code>data/booking/…/BookingRepositoryImpl.kt</code>, <code>domain/booking/…/BookingByCriteriaPaged.kt</code>, <code>features/home/…/HomeMiddleware.kt</code>, <code>architecture-tests/…/archunit_store/c73a0dbc-…</code>.</p>
+</section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+if (window.mermaid) { mermaid.initialize({ startOnLoad: true, theme: 'dark', flowchart: { useMaxWidth: false } }); }
+
+const GANTT = {
+  'g-p1-2': { title: 'Fase 1 · 2 developers · base 103.67 h (× 1.08 = 111.96 h)', max: 103.67, rows: [
+    ['Dev A', [['P1-01',0,6,'c'],['P1-13',6,18,'c'],['P1-03',18,26.33],['P1-14',26.33,36.67,'c'],['P1-15',36.67,48.67,'c'],['P1-16',48.67,60.67,'c'],['P1-12',60.67,72.67],['P1-11',72.67,83],['P1-18',83,89.33,'c'],['Cierre',89.33,103.67,'t']]],
+    ['Dev B', [['P1-02',0,5.33],['P1-06',6,18,'c'],['P1-07',18,28.33,'c'],['P1-04',28.33,36.67],['P1-10',36.67,48.67],['P1-08',48.67,57],['P1-09',57,63],['P1-17',63,75,'c'],['P1-05',75,81.33],['Cierre',89.33,103.67,'t']]]
+  ]},
+  'g-p1-3': { title: 'Fase 1 · 3 developers · base 83.00 h (× 1.16 = 96.28 h)', max: 103.67, rows: [
+    ['Dev A', [['P1-01',0,6,'c'],['P1-13',6,18,'c'],['P1-14',18,28.33,'c'],['P1-15',28.33,40.33,'c'],['P1-16',40.33,52.33,'c'],['P1-17',52.33,64.33,'c'],['P1-18',64.33,70.67,'c'],['Cierre',70.67,83,'t']]],
+    ['Dev B', [['P1-02',0,5.33],['P1-06',6,18,'c'],['P1-07',18,28.33,'c'],['P1-10',28.33,40.33],['P1-12',40.33,52.33],['Cierre',70.67,83,'t']]],
+    ['Dev C', [['P1-03',6,14.33],['P1-04',14.33,22.67],['P1-05',22.67,29],['P1-08',29,37.33],['P1-09',37.33,43.33],['P1-11',43.33,53.67],['Cierre',70.67,83,'t']]]
+  ]},
+  'g-p2-2': { title: 'Fase 2 · 2 developers · base 99.33 h (× 1.08 = 107.28 h)', max: 99.33, rows: [
+    ['Dev A', [['P2-01',0,6,'c'],['P2-02',6,18,'c'],['P2-03',18,26.33,'c'],['P2-04',26.33,36.33,'c'],['P2-11',36.33,50],['P2-12',50,60.33],['P2-06',60.33,66.67],['P2-13',66.67,78.67,'c'],['P2-14',78.67,85,'c'],['Cierre',85,99.33,'t']]],
+    ['Dev B', [['P2-07',6,19.67],['P2-08',19.67,31.67],['P2-09',31.67,40],['P2-10',40,52],['P2-05',52,64,'c'],['Cierre',85,99.33,'t']]]
+  ]},
+  'g-p2-3': { title: 'Fase 2 · 3 developers (con fakes) · base 81.00 h (× 1.16 = 93.96 h)', max: 99.33, rows: [
+    ['Dev A', [['P2-01',0,6,'c'],['P2-02',6,18,'c'],['P2-03',18,26.33,'c'],['P2-04',26.33,36.33,'c'],['P2-05',36.33,48.33,'c'],['P2-13',50.33,62.33,'c'],['P2-14',62.33,68.67,'c'],['Cierre',68.67,81,'t']]],
+    ['Dev B', [['P2-07',6,19.67],['P2-08',19.67,31.67],['P2-06',36.33,42.67],['Cierre',68.67,81,'t']]],
+    ['Dev C', [['P2-11',6,19.67],['P2-12',19.67,30],['P2-09',30,38.33],['P2-10',38.33,50.33],['Cierre',68.67,81,'t']]]
+  ]}
+};
+
+function renderGantt(id, cfg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const pct = v => (v / cfg.max * 100).toFixed(3) + '%';
+  let html = '<div class="title">' + cfg.title + '</div>';
+  cfg.rows.forEach(([dev, bars]) => {
+    html += '<div class="row"><div class="lbl">' + dev + '</div><div class="track">';
+    bars.forEach(([name, s, e, kind]) => {
+      const cls = kind ? 'bar ' + kind : 'bar';
+      const tip = name + ': ' + s + 'h – ' + e + 'h (' + (e - s).toFixed(2) + 'h)';
+      html += '<div class="' + cls + '" style="left:' + pct(s) + ';width:' + pct(e - s) + '" title="' + tip + '">' + name + '</div>';
+    });
+    html += '</div></div>';
+  });
+  html += '<div class="axis">';
+  for (let h = 0; h <= cfg.max; h += 10) { html += '<span style="left:' + pct(h) + '">' + h + 'h</span>'; }
+  html += '</div>';
+  el.innerHTML = html;
+}
+Object.entries(GANTT).forEach(([id, cfg]) => renderGantt(id, cfg));
+
+const links = Array.from(document.querySelectorAll('#nav a'));
+const targets = links.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+function setActive() {
+  const y = window.scrollY + 120;
+  let current = targets[0];
+  targets.forEach(t => { if (t.getBoundingClientRect().top + window.scrollY <= y) current = t; });
+  links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + current.id));
+}
+window.addEventListener('scroll', setActive, { passive: true });
+window.addEventListener('resize', setActive);
+window.addEventListener('load', () => setTimeout(setActive, 300));
+setActive();
+</script>
+</body>
+</html>
